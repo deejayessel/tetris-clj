@@ -167,33 +167,94 @@
   {:test (fn []
            (is= (create-piece ["###"
                                " #"])
-                [{:coords [[0 1] [1 0] [1 1] [2 1]]
-                  :height 2
-                  :width  3
-                  :skirt  [1 0 1]}
-                 {:coords [[0 1] [1 0] [1 1] [1 2]]
-                  :height 3
-                  :width  2
-                  :skirt  [1 0]}
-                 {:coords [[0 0] [1 0] [1 1] [2 0]]
-                  :height 2
-                  :width  3
-                  :skirt  [0 0 0]}
-                 {:coords [[0 0] [0 1] [0 2] [1 1]]
-                  :height 3
-                  :width  2
-                  :skirt  [0 1]}])
+                {:index  0
+                 :bodies [{:coords [[0 1] [1 0] [1 1] [2 1]]
+                           :height 2
+                           :width  3
+                           :skirt  [1 0 1]}
+                          {:coords [[0 1] [1 0] [1 1] [1 2]]
+                           :height 3
+                           :width  2
+                           :skirt  [1 0]}
+                          {:coords [[0 0] [1 0] [1 1] [2 0]]
+                           :height 2
+                           :width  3
+                           :skirt  [0 0 0]}
+                          {:coords [[0 0] [0 1] [0 2] [1 1]]
+                           :height 3
+                           :width  2
+                           :skirt  [0 1]}]})
            (is= (create-piece ["####"])
-                [{:coords [[0 0] [1 0] [2 0] [3 0]]
-                  :height 1
-                  :width 4
-                  :skirt [0 0 0 0]}
-                 {:coords [[0 0] [0 1] [0 2] [0 3]]
-                  :height 4
-                  :width 1
-                  :skirt [0]}]))}
+                {:index  0
+                 :bodies [{:coords [[0 0] [1 0] [2 0] [3 0]]
+                           :height 1
+                           :width  4
+                           :skirt  [0 0 0 0]}
+                          {:coords [[0 0] [0 1] [0 2] [0 3]]
+                           :height 4
+                           :width  1
+                           :skirt  [0]}]}))}
   [pic]
-  (->> pic
-       (pic->coords)
-       (compute-rotations)
-       (map create-body)))
+  (let [coords (pic->coords pic)
+        rotations (compute-rotations coords)]
+    {:index  0
+     :bodies (-> (map create-body rotations)
+                 (vec))}))
+
+(defn- get-body
+  "Returns the current body of a tetris piece"
+  {:test (fn []
+           (is= (-> (create-piece ["####"])
+                    (get-body))
+                {:coords [[0 0] [1 0] [2 0] [3 0]]
+                 :height 1
+                 :width  4
+                 :skirt  [0 0 0 0]})
+           (is= (-> (create-piece [" #"
+                                   "###"])
+                    (get-body))
+                {:coords [[0 0] [1 0] [1 1] [2 0]]
+                 :height 2
+                 :width  3
+                 :skirt  [0 0 0]}))}
+  [piece]
+  (get-in piece [:bodies (:index piece)]))
+
+(defn get-coords [piece] (-> piece
+                             (get-body)
+                             :coords))
+
+(defn get-height [piece] (-> piece
+                             (get-body)
+                             :height))
+
+(defn get-width [piece] (-> piece
+                            (get-body)
+                            :width))
+
+(defn get-skirt [piece] (-> piece
+                            (get-body)
+                            :skirt))
+
+(defn rotate
+  "Rotates a tetris piece"
+  {:test (fn []
+           (is= (-> (create-piece ["####"])
+                    (rotate)
+                    (get-coords))
+                (pic->coords ["#"
+                              "#"
+                              "#"
+                              "#"]))
+           (is= (-> (create-piece ["####"])
+                    (rotate)
+                    (rotate)
+                    (get-coords))
+                (pic->coords ["####"])))}
+  [piece]
+  (update piece :index
+          (fn [i]
+            (mod (inc i)
+                 (-> piece
+                     :bodies
+                     (count))))))
