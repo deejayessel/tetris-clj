@@ -118,13 +118,6 @@
 (defn compute-rotations
   "Computes the unique rotations of a piece in clockwise order"
   {:test (fn []
-           (is= (compute-rotations (pic->coords ["####"]))
-                (map pic->coords
-                     [["####"]
-                      ["#"
-                       "#"
-                       "#"
-                       "#"]]))
            (is= (compute-rotations (pic->coords ["###"
                                                  "#"]))
                 (map pic->coords
@@ -147,27 +140,60 @@
                 (reduced rotations)
                 (conj rotations rotated))))
           [coords]
-          (range 4))
-  )
+          (range 4)))
+
+(defn create-body
+  "Create a piece body from a pic; the result of rotating a body is treated as a new body (unless rotation has no effect)"
+  {:test (fn []
+           (is= (create-body (pic->coords ["##"
+                                           " ##"]))
+                {:coords [[0 1] [1 0] [1 1] [2 0]]
+                 :height 2
+                 :width  3
+                 :skirt  [1 0 0]})
+           (is= (create-body (pic->coords ["####"]))
+                {:coords [[0 0] [1 0] [2 0] [3 0]]
+                 :height 1
+                 :width  4
+                 :skirt  [0 0 0 0]}))}
+  [coords]
+  {:coords coords
+   :height (compute-height coords)
+   :width  (compute-width coords)
+   :skirt  (compute-skirt coords)})
 
 (defn create-piece
-  "Create a tetromino from a pic"
+  "Create a tetris piece from a pic"
   {:test (fn []
-           (is= (create-piece ["##"
-                               " ##"])
-                {:height    2
-                 :width     3
-                 :skirt     [1 0 0]
-                 :rotations []})
+           (is= (create-piece ["###"
+                               " #"])
+                [{:coords [[0 1] [1 0] [1 1] [2 1]]
+                  :height 2
+                  :width  3
+                  :skirt  [1 0 1]}
+                 {:coords [[0 1] [1 0] [1 1] [1 2]]
+                  :height 3
+                  :width  2
+                  :skirt  [1 0]}
+                 {:coords [[0 0] [1 0] [1 1] [2 0]]
+                  :height 2
+                  :width  3
+                  :skirt  [0 0 0]}
+                 {:coords [[0 0] [0 1] [0 2] [1 1]]
+                  :height 3
+                  :width  2
+                  :skirt  [0 1]}])
            (is= (create-piece ["####"])
-                {:height    1
-                 :width     4
-                 :skirt     [0 0 0 0]
-                 :rotations []})
-           )}
+                [{:coords [[0 0] [1 0] [2 0] [3 0]]
+                  :height 1
+                  :width 4
+                  :skirt [0 0 0 0]}
+                 {:coords [[0 0] [0 1] [0 2] [0 3]]
+                  :height 4
+                  :width 1
+                  :skirt [0]}]))}
   [pic]
-  (let [coords (pic->coords pic)]
-    {:height    (compute-height coords)
-     :width     (compute-width coords)
-     :skirt     (compute-skirt coords)
-     :rotations []}))
+  (->> pic
+       (pic->coords)
+       (compute-rotations)
+       (map create-body)))
