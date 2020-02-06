@@ -1,4 +1,4 @@
-# tetris.clj
+# tetris-clj
 
 An implementation of Tetris in Clojure.
 

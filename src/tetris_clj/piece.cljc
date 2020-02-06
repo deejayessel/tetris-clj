@@ -1,31 +1,7 @@
-(ns tetris.piece
+(ns tetris-clj.piece
   (:require [ysera.error :refer [error]]
-            [ysera.test :refer [is=]]))
-
-(defn pic->coords
-  "Convert from a 'picture' to a sorted list of coordinates"
-  {:test (fn []
-           (is= (pic->coords ["##"
-                              " ##"])
-                [[0 1] [1 0] [1 1] [2 0]])
-           (is= (pic->coords ["####"])
-                [[0 0] [1 0] [2 0] [3 0]])
-           (is= (pic->coords ["###"
-                              "#"])
-                [[0 0] [0 1] [1 1] [2 1]]))}
-  [strings]
-  (->> strings
-       (reverse)                                            ; Treat last string as lowermost row
-       (map-indexed
-         (fn [y row]
-           (map-indexed
-             (fn [x char]
-               (when (= char \#)
-                 [x y]))
-             row)))
-       (apply concat)
-       (remove nil?)
-       (sort)))
+            [ysera.test :refer [is=]]
+            [tetris-clj.utils :refer [pic->coords]]))
 
 (defn compute-skirt
   "Compute the skirt of a piece from its coords"
@@ -43,6 +19,7 @@
                 [0 0]))}
   [coords]
   (->> coords
+       (sort-by first)
        (partition-by first)
        (map (fn [col]
               (->> col
@@ -113,7 +90,7 @@
     (->> coords
          (map (fn [[x y]] [y x]))                           ; reflection across y=x
          (map (fn [[x y]] [x (- rotated-height 1 y)]))      ; vertical reflection
-         (sort))))
+         (set))))
 
 (defn compute-rotations
   "Computes the unique rotations of a piece in clockwise order"
@@ -143,16 +120,16 @@
           (range 4)))
 
 (defn create-body
-  "Create a piece body from a pic; the result of rotating a body is treated as a new body (unless rotation has no effect)"
+  "Create a piece body from coords; the result of rotating a body is treated as a new body (unless rotation has no effect)"
   {:test (fn []
            (is= (create-body (pic->coords ["##"
                                            " ##"]))
-                {:coords [[0 1] [1 0] [1 1] [2 0]]
+                {:coords #{[0 1] [1 0] [1 1] [2 0]}
                  :height 2
                  :width  3
                  :skirt  [1 0 0]})
            (is= (create-body (pic->coords ["####"]))
-                {:coords [[0 0] [1 0] [2 0] [3 0]]
+                {:coords #{[0 0] [1 0] [2 0] [3 0]}
                  :height 1
                  :width  4
                  :skirt  [0 0 0 0]}))}
@@ -168,29 +145,29 @@
            (is= (create-piece ["###"
                                " #"])
                 {:index  0
-                 :bodies [{:coords [[0 1] [1 0] [1 1] [2 1]]
+                 :bodies [{:coords #{[0 1] [1 0] [1 1] [2 1]}
                            :height 2
                            :width  3
                            :skirt  [1 0 1]}
-                          {:coords [[0 1] [1 0] [1 1] [1 2]]
+                          {:coords #{[0 1] [1 0] [1 1] [1 2]}
                            :height 3
                            :width  2
                            :skirt  [1 0]}
-                          {:coords [[0 0] [1 0] [1 1] [2 0]]
+                          {:coords #{[0 0] [1 0] [1 1] [2 0]}
                            :height 2
                            :width  3
                            :skirt  [0 0 0]}
-                          {:coords [[0 0] [0 1] [0 2] [1 1]]
+                          {:coords #{[0 0] [0 1] [0 2] [1 1]}
                            :height 3
                            :width  2
                            :skirt  [0 1]}]})
            (is= (create-piece ["####"])
                 {:index  0
-                 :bodies [{:coords [[0 0] [1 0] [2 0] [3 0]]
+                 :bodies [{:coords #{[0 0] [1 0] [2 0] [3 0]}
                            :height 1
                            :width  4
                            :skirt  [0 0 0 0]}
-                          {:coords [[0 0] [0 1] [0 2] [0 3]]
+                          {:coords #{[0 0] [0 1] [0 2] [0 3]}
                            :height 4
                            :width  1
                            :skirt  [0]}]}))}
@@ -206,23 +183,30 @@
   {:test (fn []
            (is= (-> (create-piece ["####"])
                     (get-body))
-                {:coords [[0 0] [1 0] [2 0] [3 0]]
+                {:coords #{[0 0] [1 0] [2 0] [3 0]}
                  :height 1
                  :width  4
                  :skirt  [0 0 0 0]})
            (is= (-> (create-piece [" #"
                                    "###"])
                     (get-body))
-                {:coords [[0 0] [1 0] [1 1] [2 0]]
+                {:coords #{[0 0] [1 0] [1 1] [2 0]}
                  :height 2
                  :width  3
                  :skirt  [0 0 0]}))}
   [piece]
   (get-in piece [:bodies (:index piece)]))
 
-(defn get-coords [piece] (-> piece
-                             (get-body)
-                             :coords))
+(defn get-coords
+  {:test (fn []
+           (is= (-> (create-piece ["###"
+                                   "#"])
+                    (get-coords))
+                #{[0 0] [0 1] [1 1] [2 1]}))}
+  [piece]
+  (-> piece
+      (get-body)
+      :coords))
 
 (defn get-height [piece] (-> piece
                              (get-body)
