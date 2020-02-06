@@ -1,6 +1,6 @@
 (ns tetris.clj-test
   (:require [clojure.test :refer :all]
-            [tetris.core :refer :all]))
+            [tetris.piece :refer :all]))
 
 (deftest a-test
   (testing "FIXME, I fail."

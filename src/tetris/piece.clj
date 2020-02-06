@@ -1,6 +1,6 @@
-(ns tetris.core
+(ns tetris.piece
   (:require [ysera.error :refer [error]]
-            [ysera.test :refer [is is= is-not]]))
+            [ysera.test :refer [is=]]))
 
 (defn pic->coords
   "Convert from a 'picture' to a sorted list of coordinates"
