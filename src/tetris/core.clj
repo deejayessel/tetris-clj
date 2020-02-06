@@ -5,13 +5,13 @@
 (defn pic->coords
   "Convert from a 'picture' to a sorted list of coordinates"
   {:test (fn []
-           (is= (pic->coords ["##_"
-                              "_##"])
+           (is= (pic->coords ["##"
+                              " ##"])
                 [[0 1] [1 0] [1 1] [2 0]])
            (is= (pic->coords ["####"])
                 [[0 0] [1 0] [2 0] [3 0]])
            (is= (pic->coords ["###"
-                              "#__"])
+                              "#"])
                 [[0 0] [0 1] [1 1] [2 1]]))}
   [strings]
   (->> strings
@@ -30,11 +30,11 @@
 (defn compute-skirt
   "Compute the skirt of a piece from its coords"
   {:test (fn []
-           (is= (compute-skirt (pic->coords ["##_ "
-                                             "_## "]))
+           (is= (compute-skirt (pic->coords ["##"
+                                             " ##"]))
                 [1 0 0])
-           (is= (compute-skirt (pic->coords ["_## "
-                                             "##_"]))
+           (is= (compute-skirt (pic->coords [" ##"
+                                             "##"]))
                 [0 0 1])
            (is= (compute-skirt (pic->coords ["####"]))
                 [0 0 0 0])
@@ -52,8 +52,8 @@
 (defn compute-height
   "Compute the height of a piece from its coords"
   {:test (fn []
-           (is= (compute-height (pic->coords ["##_ "
-                                              "_## "]))
+           (is= (compute-height (pic->coords ["##"
+                                              " ##"]))
                 2)
            (is= (compute-height (pic->coords ["####"]))
                 1))}
@@ -66,8 +66,8 @@
 (defn compute-width
   "Compute the width of a piece from its coords"
   {:test (fn []
-           (is= (compute-width (pic->coords ["##_ "
-                                             "_## "]))
+           (is= (compute-width (pic->coords ["##"
+                                             " ##"]))
                 3)
            (is= (compute-width (pic->coords ["####"]))
                 4))}
@@ -85,41 +85,76 @@
                               "#"
                               "#"
                               "#"]))
-           (is= (compute-next-rotation (pic->coords ["##_"
-                                                     "_##"]))
-                (pic->coords ["_#"
+           (is= (compute-next-rotation (pic->coords [" ##"
+                                                     "##"]))
+                (pic->coords ["#"
                               "##"
-                              "#_"]))
-           (let [I (pic->coords ["####"])]
-             (is= (-> I
-                      (compute-next-rotation)
-                      (compute-next-rotation))
-                  I))
+                              " #"]))
            (let [L (pic->coords ["#"
                                  "#"
                                  "##"])]
-             (is-not (= (-> L
-                            (compute-next-rotation)
-                            (compute-next-rotation))
-                        L))
+             (is= (compute-next-rotation L)
+                  (pic->coords ["###"
+                                "#"]))
+             (is= (-> L
+                      (compute-next-rotation)
+                      (compute-next-rotation))
+                  (pic->coords ["##"
+                                " #"
+                                " #"]))
              (is= (-> L
                       (compute-next-rotation)
                       (compute-next-rotation)
-                      (compute-next-rotation)
                       (compute-next-rotation))
-                  L)))}
+                  (pic->coords ["  #"
+                                "###"]))))}
   [coords]
-  (let [rotated-width (compute-height coords)]
+  (let [rotated-height (compute-width coords)]
     (->> coords
          (map (fn [[x y]] [y x]))                           ; reflection across y=x
-         (map (fn [[x y]] [(- rotated-width 1 x) y]))       ; horizontal reflection
+         (map (fn [[x y]] [x (- rotated-height 1 y)]))      ; vertical reflection
          (sort))))
+
+(defn compute-rotations
+  "Computes the unique rotations of a piece in clockwise order"
+  {:test (fn []
+           (is= (compute-rotations (pic->coords ["####"]))
+                (map pic->coords
+                     [["####"]
+                      ["#"
+                       "#"
+                       "#"
+                       "#"]]))
+           (is= (compute-rotations (pic->coords ["###"
+                                                 "#"]))
+                (map pic->coords
+                     [["###"
+                       "#"]
+                      ["##"
+                       " #"
+                       " #"]
+                      ["  #"
+                       "###"]
+                      ["#"
+                       "#"
+                       "##"]])))}
+  [coords]
+  (reduce (fn [rotations _]
+            (let [rotated (->> rotations
+                               (last)
+                               (compute-next-rotation))]
+              (if (= rotated coords)
+                (reduced rotations)
+                (conj rotations rotated))))
+          [coords]
+          (range 4))
+  )
 
 (defn create-piece
   "Create a tetromino from a pic"
   {:test (fn []
-           (is= (create-piece ["##_ "
-                               "_## "])
+           (is= (create-piece ["##"
+                               " ##"])
                 {:height    2
                  :width     3
                  :skirt     [1 0 0]
