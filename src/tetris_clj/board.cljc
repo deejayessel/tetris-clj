@@ -3,15 +3,17 @@
             [ysera.test :refer [is= is is-not]]
             [tetris-clj.utils :refer [pic->mat]]
             [tetris-clj.piece :refer [create-piece
-                                      get-coords]]))
+                                      get-in-piece]]))
 
 (defn create-board
   "Create an empty tetris game board. If a pic is provided, use it to build the game board instead."
   {:test (fn []
-           (is= (create-board 10 20)
-                {:matrix (repeat 20 (repeat 10 false))
-                 :width  10
-                 :height 20})
+           (is= (create-board 3 3)
+                {:matrix [[false false false]
+                          [false false false]
+                          [false false false]]
+                 :width  3
+                 :height 3})
            (is= (create-board [" # "
                                " ##"
                                "###"])
@@ -47,15 +49,139 @@
   [board x y val]
   (assoc-in board [:matrix y x] val))
 
-(defn place-piece
-  "Place a piece on the board with lower-left corner at (x,y)"
+(defn occupied?
+  "Check whether a cell (x,y) is occupied or not"
+  {:test (fn []
+           (is-not (-> (create-board ["   "])
+                       (occupied? 0 0)))
+           (is (-> (create-board [" #"])
+                   (occupied? 1 0))))}
+  [board x y]
+  (get-in board [:matrix y x]))
+
+(defn create-empty-row [width] (-> (repeat width false)
+                                   (vec)))
+
+(defn get-row
+  "Get a row in the board"
+  {:test (fn []
+           (is= (-> (create-board ["###"
+                                   "   "])
+                    (get-row 0))
+                (repeat 3 false))
+           (is= (-> (create-board ["###"
+                                   "   "])
+                    (get-row 1))
+                (repeat 3 true)))}
+  [board y]
+  (get-in board [:matrix y]))
+
+(defn row-full?
+  "Check whether a row in the board is full"
+  {:test (fn []
+           (let [board (create-board ["###"
+                                      "   "])]
+             (is-not (row-full? board 0))
+             (is (row-full? board 1))))}
+  [board y]
+  (every? identity (get-row board y)))
+
+(defn shift-down
+  "Shift the rows above y=start down by step"
+  {:test (fn []
+           (is= (-> (create-board ["###"
+                                   "   "
+                                   "###"])
+                    (shift-down 1 1)
+                    :matrix)
+                (pic->mat ["   "
+                           "###"
+                           "###"]))
+           (is= (-> (create-board ["###"
+                                   "   "
+                                   "   "
+                                   "   "])
+                    (shift-down 0 3)
+                    :matrix)
+                (pic->mat ["   "
+                           "   "
+                           "   "
+                           "###"])))}
+  [board start step]
+  {:pre [(< start (:height board))]}
+  (reduce (fn [board y]
+            (assoc-in board [:matrix y]
+                      (or (get-row board (+ y step))
+                          (create-empty-row (:width board)))))
+          board
+          (range start (:height board))))
+
+(defn clear-row
+  "Clear a row in the board"
+  {:test (fn []
+           (is= (-> (create-board ["  #"
+                                   "###"
+                                   "# #"])
+                    (clear-row 1)
+                    :matrix)
+                (pic->mat ["  #"
+                           "   "
+                           "# #"])))}
+  [board y]
+  (reduce (fn [board x]
+            (set-cell board x y false))
+          board
+          (range (:width board))))
+
+(defn clear-rows
+  "Clear all filled rows where y is in [start, end) in the board and shift all rows above cleared rows down."
+  {:test (fn []
+           (is= (-> (create-board ["# #  "
+                                   "#### "
+                                   "#####"
+                                   "#####"
+                                   "#####"])
+                    (clear-rows 0 3)
+                    :matrix)
+                (pic->mat ["     "
+                           "     "
+                           "     "
+                           "# #  "
+                           "#### "]))
+           ; Handle split line-clears
+           (is= (-> (create-board ["# #  "
+                                   "#### "
+                                   "#####"
+                                   "## ##"
+                                   "#####"])
+                    (clear-rows 0 3)
+                    :matrix)
+                (pic->mat ["     "
+                           "     "
+                           "# #  "
+                           "#### "
+                           "## ##"])))}
+  [board start end]
+  (loop [b board
+         y start]
+    (if (>= y end)
+      b
+      (if (row-full? b y)
+        (-> b
+            (clear-row y)
+            (shift-down y 1)
+            (recur y))
+        (recur b (inc y))))))
+
+(defn add-piece
+  "Add a piece on to board with lower-left corner at (x,y)"
   {:test (fn []
            (is= (-> (create-board ["   "
                                    "   "
                                    "## "])
-                    (place-piece (create-piece ["###"
-                                                "  #"])
-                                 0 0)
+                    (add-piece (create-piece ["###"
+                                              "  #"])
+                               0 0)
                     :matrix)
                 (pic->mat ["   "
                            "###"
@@ -67,14 +193,57 @@
                       (+ y dy)
                       true))
           board
-          (get-coords piece)))
+          (get-in-piece piece :coords)))
 
-(defn occupied?
-  "Check whether a cell (x,y) is occupied or not"
+(defn place-piece
+  "Place a piece on the board, processing line clears"
   {:test (fn []
-           (is-not (-> (create-board ["   "])
-                       (occupied? 0 0)))
-           (is (-> (create-board [" #"])
-                   (occupied? 1 0))))}
-  [board x y]
-  (get-in board [:matrix y x]))
+           ; Process a tetris (line clear), shift cells down
+           (is= (-> (create-board ["    #"
+                                   "    #"
+                                   "# ###"])
+                    (place-piece (create-piece ["###"
+                                                " # "])
+                                 0 0)
+                    :matrix)
+                (pic->mat ["     "
+                           "    #"
+                           "### #"]))
+           ; Process multiple simultaneous clears
+           (is= (-> (create-board ["   #"
+                                   "   #"
+                                   "# ##"])
+                    (place-piece (create-piece ["###"
+                                                " # "])
+                                 0 0)
+                    :matrix)
+                (pic->mat ["    "
+                           "    "
+                           "   #"]))
+           ; Process multiple simultaneous split clears
+           (is= (-> (create-board ["###  "
+                                   "# ## "
+                                   "#### "])
+                    (place-piece (create-piece ["##"
+                                                " #"
+                                                " #"])
+                                 3 0)
+                    :matrix)
+                (pic->mat ["     "
+                           "     "
+                           "# ###"]))
+           ; No line clear
+           (is= (-> (create-board ["    "
+                                   "    "
+                                   "#   "])
+                    (place-piece (create-piece ["###"
+                                                " # "])
+                                 0 0)
+                    :matrix)
+                (pic->mat ["    "
+                           "### "
+                           "##  "])))}
+  [board piece x y]
+  (-> board
+      (add-piece piece x y)
+      (clear-rows y (+ y (get-in-piece piece :height)))))

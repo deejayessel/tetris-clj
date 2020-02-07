@@ -197,35 +197,31 @@
   [piece]
   (get-in piece [:bodies (:index piece)]))
 
-(defn get-coords
+(defn get-in-piece
   {:test (fn []
            (is= (-> (create-piece ["###"
                                    "#"])
-                    (get-coords))
-                #{[0 0] [0 1] [1 1] [2 1]}))}
-  [piece]
+                    (get-in-piece :coords))
+                #{[0 0] [0 1] [1 1] [2 1]})
+           (is= (-> (create-piece ["###"
+                                   "#"])
+                    (get-in-piece :height))
+                2)
+           (is= (-> (create-piece ["###"
+                                   "#"])
+                    (get-in-piece :skirt))
+                [0 1 1]))}
+  [piece key]
   (-> piece
       (get-body)
-      :coords))
-
-(defn get-height [piece] (-> piece
-                             (get-body)
-                             :height))
-
-(defn get-width [piece] (-> piece
-                            (get-body)
-                            :width))
-
-(defn get-skirt [piece] (-> piece
-                            (get-body)
-                            :skirt))
+      key))
 
 (defn rotate
   "Rotates a tetris piece"
   {:test (fn []
            (is= (-> (create-piece ["####"])
                     (rotate)
-                    (get-coords))
+                    (get-in-piece :coords))
                 (pic->coords ["#"
                               "#"
                               "#"
@@ -233,7 +229,7 @@
            (is= (-> (create-piece ["####"])
                     (rotate)
                     (rotate)
-                    (get-coords))
+                    (get-in-piece :coords))
                 (pic->coords ["####"])))}
   [piece]
   (update piece :index
