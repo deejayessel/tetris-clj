@@ -5,7 +5,7 @@
             [tetris.definitions :refer [get-definition]]))
 
 (defn create-piece
-  "Create a tetris piece from an id"
+  "Create a tetris piece from an id and optional index."
   {:test (fn []
            (is= (create-piece "T")
                 {:id             "T"
@@ -45,7 +45,8 @@
       (get-definition)
       (get-in [:rotations (:rotation-index piece)])))
 
-(defn get-in-piece
+(defn- get-in-piece
+  "Returns a value associated with the input key in a piece."
   {:test (fn []
            (is= (-> (create-piece "J")
                     (get-in-piece :coords))
@@ -61,16 +62,21 @@
       (get-body)
       key))
 
+(defn height [piece] (get-in-piece piece :height))
+(defn width [piece] (get-in-piece piece :width))
+(defn coords [piece] (get-in-piece piece :coords))
+(defn skirt [piece] (get-in-piece piece :skirt))
+
 (defn rotate-piece
-  "Rotates a tetris piece clockwise.  If n is provided, rotates piece n times clockwise."
+  "Rotates a tetris piece clockwise.  If n is provided, rotates piece clockwise n times."
   {:test (fn []
            (is= (-> (create-piece "I")
                     (rotate-piece)
-                    (get-in-piece :coords))
+                    (coords))
                 (pic->coords ["####"]))
            (is= (-> (create-piece "I")
                     (rotate-piece 2)
-                    (get-in-piece :coords))
+                    (coords))
                 (pic->coords ["#"
                               "#"
                               "#"

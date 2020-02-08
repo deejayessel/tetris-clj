@@ -1,7 +1,7 @@
 (ns tetris.test-all
   (:require [clojure.test :refer [run-tests successful?]]
             [ysera.test :refer [deftest is]]
-            [tetris.load-definitions]
+            [tetris.definitions.piece-definitions]
             [tetris.board]
             [tetris.piece]
             [tetris.utils]))
@@ -12,8 +12,6 @@
          (let [namespaces (->> (all-ns)
                                (map str)
                                (filter (fn [x] (re-matches #"tetris\..*" x)))
-                               (remove (fn [x] (or (= "tetris.test-all" x)
-                                                   (= "tetris.load-definitions" x))))
-                               (cons "tetris.load-definitions")
+                               (remove (fn [x] (= "tetris.test-all" x)))
                                (map symbol))]
            (is (successful? (time (apply run-tests namespaces))))))

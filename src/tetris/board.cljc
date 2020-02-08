@@ -2,8 +2,7 @@
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is= is is-not]]
             [tetris.utils :refer [pic->mat]]
-            [tetris.piece :refer [create-piece
-                                      get-in-piece]]))
+            [tetris.piece :refer [create-piece] :as piece]))
 
 (defn create-board
   "Create an empty tetris game board. If a pic is provided, use it to build the game board instead."
@@ -196,7 +195,7 @@
                       (+ y dy)
                       true))
           board
-          (get-in-piece piece :coords)))
+          (piece/coords piece)))
 
 (defn place-piece
   "Place a piece on the board, processing line clears"
@@ -244,4 +243,4 @@
   [board piece x y]
   (-> board
       (add-piece piece x y)
-      (clear-rows y (+ y (get-in-piece piece :height)))))
+      (clear-rows y (+ y (piece/height piece)))))

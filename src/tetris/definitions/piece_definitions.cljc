@@ -1,4 +1,4 @@
-(ns tetris.piece-definitions
+(ns tetris.definitions.piece-definitions
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is=]]
             [tetris.utils :refer [pic->coords]]
