@@ -3,7 +3,7 @@
             [ysera.test :refer [is= is is-not]]))
 
 (defn pic->coords
-  "Convert from a 'picture' to a sorted list of coordinates"
+  "Convert from a 'picture' to a set of coordinates"
   {:test (fn []
            (is= (pic->coords ["##"
                               " ##"])

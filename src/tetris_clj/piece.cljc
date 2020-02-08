@@ -1,240 +1,87 @@
 (ns tetris-clj.piece
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is=]]
-            [tetris-clj.utils :refer [pic->coords]]))
-
-(defn compute-skirt
-  "Compute the skirt of a piece from its coords"
-  {:test (fn []
-           (is= (compute-skirt (pic->coords ["##"
-                                             " ##"]))
-                [1 0 0])
-           (is= (compute-skirt (pic->coords [" ##"
-                                             "##"]))
-                [0 0 1])
-           (is= (compute-skirt (pic->coords ["####"]))
-                [0 0 0 0])
-           (is= (compute-skirt (pic->coords ["##"
-                                             "##"]))
-                [0 0]))}
-  [coords]
-  (->> coords
-       (sort-by first)
-       (partition-by first)
-       (map (fn [col]
-              (->> col
-                   (map second)
-                   (apply min))))))
-
-(defn compute-height
-  "Compute the height of a piece from its coords"
-  {:test (fn []
-           (is= (compute-height (pic->coords ["##"
-                                              " ##"]))
-                2)
-           (is= (compute-height (pic->coords ["####"]))
-                1))}
-  [coords]
-  (->> coords
-       (sort-by second)
-       (partition-by second)
-       (count)))
-
-(defn compute-width
-  "Compute the width of a piece from its coords"
-  {:test (fn []
-           (is= (compute-width (pic->coords ["##"
-                                             " ##"]))
-                3)
-           (is= (compute-width (pic->coords ["####"]))
-                4))}
-  [coords]
-  (->> coords
-       (sort-by first)
-       (partition-by first)
-       (count)))
-
-(defn compute-next-rotation
-  "Computes the next clockwise rotated version of a piece from its coords"
-  {:test (fn []
-           (is= (compute-next-rotation (pic->coords ["####"]))
-                (pic->coords ["#"
-                              "#"
-                              "#"
-                              "#"]))
-           (is= (compute-next-rotation (pic->coords [" ##"
-                                                     "##"]))
-                (pic->coords ["#"
-                              "##"
-                              " #"]))
-           (let [L (pic->coords ["#"
-                                 "#"
-                                 "##"])]
-             (is= (compute-next-rotation L)
-                  (pic->coords ["###"
-                                "#"]))
-             (is= (-> L
-                      (compute-next-rotation)
-                      (compute-next-rotation))
-                  (pic->coords ["##"
-                                " #"
-                                " #"]))
-             (is= (-> L
-                      (compute-next-rotation)
-                      (compute-next-rotation)
-                      (compute-next-rotation))
-                  (pic->coords ["  #"
-                                "###"]))))}
-  [coords]
-  (let [rotated-height (compute-width coords)]
-    (->> coords
-         (map (fn [[x y]] [y x]))                           ; reflection across y=x
-         (map (fn [[x y]] [x (- rotated-height 1 y)]))      ; vertical reflection
-         (set))))
-
-(defn compute-rotations
-  "Computes the unique rotations of a piece in clockwise order"
-  {:test (fn []
-           (is= (compute-rotations (pic->coords ["###"
-                                                 "#"]))
-                (map pic->coords
-                     [["###"
-                       "#"]
-                      ["##"
-                       " #"
-                       " #"]
-                      ["  #"
-                       "###"]
-                      ["#"
-                       "#"
-                       "##"]])))}
-  [coords]
-  (reduce (fn [rotations _]
-            (let [rotated (->> rotations
-                               (last)
-                               (compute-next-rotation))]
-              (if (= rotated coords)
-                (reduced rotations)
-                (conj rotations rotated))))
-          [coords]
-          (range 4)))
-
-(defn create-body
-  "Create a piece body from coords; the result of rotating a body is treated as a new body (unless rotation has no effect)"
-  {:test (fn []
-           (is= (create-body (pic->coords ["##"
-                                           " ##"]))
-                {:coords #{[0 1] [1 0] [1 1] [2 0]}
-                 :height 2
-                 :width  3
-                 :skirt  [1 0 0]})
-           (is= (create-body (pic->coords ["####"]))
-                {:coords #{[0 0] [1 0] [2 0] [3 0]}
-                 :height 1
-                 :width  4
-                 :skirt  [0 0 0 0]}))}
-  [coords]
-  {:coords coords
-   :height (compute-height coords)
-   :width  (compute-width coords)
-   :skirt  (compute-skirt coords)})
+            [tetris-clj.utils :refer [pic->coords]]
+            [tetris-clj.definitions :refer [get-definition]]))
 
 (defn create-piece
-  "Create a tetris piece from a pic"
+  "Create a tetris piece from an id"
   {:test (fn []
-           (is= (create-piece ["###"
-                               " #"])
-                {:index  0
-                 :bodies [{:coords #{[0 1] [1 0] [1 1] [2 1]}
-                           :height 2
-                           :width  3
-                           :skirt  [1 0 1]}
-                          {:coords #{[0 1] [1 0] [1 1] [1 2]}
-                           :height 3
-                           :width  2
-                           :skirt  [1 0]}
-                          {:coords #{[0 0] [1 0] [1 1] [2 0]}
-                           :height 2
-                           :width  3
-                           :skirt  [0 0 0]}
-                          {:coords #{[0 0] [0 1] [0 2] [1 1]}
-                           :height 3
-                           :width  2
-                           :skirt  [0 1]}]})
-           (is= (create-piece ["####"])
-                {:index  0
-                 :bodies [{:coords #{[0 0] [1 0] [2 0] [3 0]}
-                           :height 1
-                           :width  4
-                           :skirt  [0 0 0 0]}
-                          {:coords #{[0 0] [0 1] [0 2] [0 3]}
-                           :height 4
-                           :width  1
-                           :skirt  [0]}]}))}
-  [pic]
-  (let [coords (pic->coords pic)
-        rotations (compute-rotations coords)]
-    {:index  0
-     :bodies (-> (map create-body rotations)
-                 (vec))}))
+           (is= (create-piece "T")
+                {:id             "T"
+                 :rotation-index 0})
+           (is= (create-piece "T" 3)
+                {:id             "T"
+                 :rotation-index 3})
+           (is= (create-piece "I" 2)
+                {:id             "I"
+                 :rotation-index 0}))}
+  ([id]
+   (create-piece id 0))
+  ([id rotation-index]
+   {:id             id
+    :rotation-index (let [rotation-count (-> (get-definition id)
+                                             :rotation-count)]
+                      (mod rotation-index
+                           rotation-count))}))
 
 (defn- get-body
   "Returns the current body of a tetris piece"
   {:test (fn []
-           (is= (-> (create-piece ["####"])
+           (is= (-> (create-piece "I")
                     (get-body))
-                {:coords #{[0 0] [1 0] [2 0] [3 0]}
-                 :height 1
-                 :width  4
-                 :skirt  [0 0 0 0]})
-           (is= (-> (create-piece [" #"
-                                   "###"])
+                {:coords #{[0 0] [0 1] [0 2] [0 3]}
+                 :height 4
+                 :width  1
+                 :skirt  [0]})
+           (is= (-> (create-piece "T")
                     (get-body))
-                {:coords #{[0 0] [1 0] [1 1] [2 0]}
+                {:coords #{[0 1] [1 0] [1 1] [2 1]}
                  :height 2
                  :width  3
-                 :skirt  [0 0 0]}))}
+                 :skirt  [1 0 1]}))}
   [piece]
-  (get-in piece [:bodies (:index piece)]))
+  (-> piece
+      (get-definition)
+      (get-in [:rotations (:rotation-index piece)])))
 
 (defn get-in-piece
   {:test (fn []
-           (is= (-> (create-piece ["###"
-                                   "#"])
+           (is= (-> (create-piece "J")
                     (get-in-piece :coords))
-                #{[0 0] [0 1] [1 1] [2 1]})
-           (is= (-> (create-piece ["###"
-                                   "#"])
+                #{[0 0] [1 0] [1 1] [1 2]})
+           (is= (-> (create-piece "L")
                     (get-in-piece :height))
-                2)
-           (is= (-> (create-piece ["###"
-                                   "#"])
+                3)
+           (is= (-> (create-piece "L")
                     (get-in-piece :skirt))
-                [0 1 1]))}
+                [0 0]))}
   [piece key]
   (-> piece
       (get-body)
       key))
 
-(defn rotate
-  "Rotates a tetris piece"
+(defn rotate-piece
+  "Rotates a tetris piece clockwise.  If n is provided, rotates piece n times clockwise."
   {:test (fn []
-           (is= (-> (create-piece ["####"])
-                    (rotate)
+           (is= (-> (create-piece "I")
+                    (rotate-piece)
+                    (get-in-piece :coords))
+                (pic->coords ["####"]))
+           (is= (-> (create-piece "I")
+                    (rotate-piece 2)
                     (get-in-piece :coords))
                 (pic->coords ["#"
                               "#"
                               "#"
-                              "#"]))
-           (is= (-> (create-piece ["####"])
-                    (rotate)
-                    (rotate)
-                    (get-in-piece :coords))
-                (pic->coords ["####"])))}
-  [piece]
-  (update piece :index
-          (fn [i]
-            (mod (inc i)
-                 (-> piece
-                     :bodies
-                     (count))))))
+                              "#"])))}
+  ([piece]
+   (rotate-piece piece 1))
+  ([piece n]
+   (let [rotation-count (-> (get-definition piece)
+                            :rotation-count)]
+     (update piece
+             :rotation-index
+             (fn [i]
+               (mod (+ i n)
+                    rotation-count))))))
