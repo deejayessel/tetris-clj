@@ -1,8 +1,8 @@
-(ns tetris-clj.piece
+(ns tetris.piece
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is=]]
-            [tetris-clj.utils :refer [pic->coords]]
-            [tetris-clj.definitions :refer [get-definition]]))
+            [tetris.utils :refer [pic->coords]]
+            [tetris.definitions :refer [get-definition]]))
 
 (defn create-piece
   "Create a tetris piece from an id"

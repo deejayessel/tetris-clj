@@ -1,4 +1,4 @@
-(ns tetris-clj.definitions
+(ns tetris.definitions
   (:require [ysera.test :refer [is= error?]]
             [ysera.error :refer [error]]))
 

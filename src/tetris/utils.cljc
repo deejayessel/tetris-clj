@@ -1,4 +1,4 @@
-(ns tetris-clj.utils
+(ns tetris.utils
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is= is is-not]]))
 

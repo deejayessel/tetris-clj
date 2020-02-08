@@ -1,8 +1,8 @@
-(ns tetris-clj.piece-definitions
+(ns tetris.piece-definitions
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is=]]
-            [tetris-clj.utils :refer [pic->coords]]
-            [tetris-clj.definitions :as definitions]))
+            [tetris.utils :refer [pic->coords]]
+            [tetris.definitions :as definitions]))
 
 ;; Build piece definitions from 'pictures' (i.e. lists of strings where hashes=filled
 

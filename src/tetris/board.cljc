@@ -1,8 +1,8 @@
-(ns tetris-clj.board
+(ns tetris.board
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is= is is-not]]
-            [tetris-clj.utils :refer [pic->mat]]
-            [tetris-clj.piece :refer [create-piece
+            [tetris.utils :refer [pic->mat]]
+            [tetris.piece :refer [create-piece
                                       get-in-piece]]))
 
 (defn create-board
