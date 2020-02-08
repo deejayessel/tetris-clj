@@ -4,7 +4,7 @@
             [tetris.utils :refer [pic->mat]]
             [tetris.piece :refer [create-piece] :as piece]
             [tetris.board :refer [create-board
-                                  place-piece]]))
+                                  place-piece] :as board]))
 
 (defn initial-position
   "Returns the initial (x,y) coordinates for a piece in a board.
@@ -29,7 +29,7 @@
                               :piece (create-piece "L")})
                 {:board {:height 20
                          :width  10
-                         :matrix (repeat 20
+                         :cells  (repeat 20
                                          (repeat 10 false))}
                  :piece {:body     {:id             "L"
                                     :rotation-index 0}
@@ -39,7 +39,7 @@
                               :piece (create-piece "T")})
                 {:board {:height 20
                          :width  10
-                         :matrix (repeat 20 (repeat 10 false))}
+                         :cells  (repeat 20 (repeat 10 false))}
                  :piece {:body     {:id             "T"
                                     :rotation-index 0}
                          :position [3 19]}
@@ -51,5 +51,5 @@
    :board board
    :piece {:body     piece
            :position (initial-position (piece/width piece)
-                                       (:width board)
-                                       (:height board))}})
+                                       (board/width board)
+                                       (board/height board))}})

@@ -8,7 +8,7 @@
   "Create an empty tetris game board. If a pic is provided, use it to build the game board instead."
   {:test (fn []
            (is= (create-board 3 3)
-                {:matrix [[false false false]
+                {:cells  [[false false false]
                           [false false false]
                           [false false false]]
                  :width  3
@@ -17,36 +17,41 @@
                                " ##"
                                "###"])
                 ; Result is flipped b/c first inner vector is y=0
-                {:matrix [[true true true]
+                {:cells  [[true true true]
                           [false true true]
                           [false true false]]
                  :width  3
                  :height 3}))}
+  ; Initialize using a picture
   ([pic]
    (let [mat (pic->mat pic)]
-     {:matrix mat
+     {:cells  mat
       :width  (-> mat
                   (first)
                   (count))
       :height (count mat)}))
+  ; Initialize empty width x height matrix
   ([width height]
-   {:matrix (-> (repeat height
+   {:cells  (-> (repeat height
                         (-> (repeat width false)
                             (vec)))
                 (vec))
     :width  width
     :height height}))
 
-(defn set-cell
+(defn width [board] (:width board))
+(defn height [board] (:height board))
+
+(defn- set-cell
   "Set the value of a cell in the board"
   {:test (fn []
            (is= (-> (create-board 2 2)
                     (set-cell 0 1 true)
-                    :matrix)
+                    :cells)
                 (pic->mat ["# "
                            "  "])))}
   [board x y val]
-  (assoc-in board [:matrix y x] val))
+  (assoc-in board [:cells y x] val))
 
 (defn get-row
   "Get a row in the board"
@@ -60,7 +65,7 @@
                     (get-row 1))
                 (repeat 3 true)))}
   [board y]
-  (get-in board [:matrix y]))
+  (get-in board [:cells y]))
 
 (defn cell-full?
   "Check whether a cell (x,y) is occupied or not"
@@ -70,7 +75,7 @@
            (is (-> (create-board [" #"])
                    (cell-full? 1 0))))}
   [board x y]
-  (get-in board [:matrix y x]))
+  (get-in board [:cells y x]))
 
 (defn create-empty-row [width] (-> (repeat width false)
                                    (vec)))
@@ -92,7 +97,7 @@
                                    "   "
                                    "###"])
                     (shift-down 1)
-                    :matrix)
+                    :cells)
                 (pic->mat ["   "
                            "###"
                            "###"]))
@@ -101,7 +106,7 @@
                                    "   "
                                    "   "])
                     (shift-down 0 3)
-                    :matrix)
+                    :cells)
                 (pic->mat ["   "
                            "   "
                            "   "
@@ -109,13 +114,13 @@
   ([board start]
    (shift-down board start 1))
   ([board start step]
-   {:pre [(< start (:height board))]}
+   {:pre [(< start (height board))]}
    (reduce (fn [board y]
-             (assoc-in board [:matrix y]
+             (assoc-in board [:cells y]
                        (or (get-row board (+ y step))
-                           (create-empty-row (:width board)))))
+                           (create-empty-row (width board)))))
            board
-           (range start (:height board)))))
+           (range start (height board)))))
 
 (defn clear-row
   "Clear a row in the board"
@@ -124,7 +129,7 @@
                                    "###"
                                    "# #"])
                     (clear-row 1)
-                    :matrix)
+                    :cells)
                 (pic->mat ["  #"
                            "   "
                            "# #"])))}
@@ -132,7 +137,7 @@
   (reduce (fn [board x]
             (set-cell board x y false))
           board
-          (range (:width board))))
+          (range (width board))))
 
 (defn clear-rows
   "Clear all filled rows where y is in [start, end) in the board and shift all rows above cleared rows down."
@@ -143,7 +148,7 @@
                                    "#####"
                                    "#####"])
                     (clear-rows 0 3)
-                    :matrix)
+                    :cells)
                 (pic->mat ["     "
                            "     "
                            "     "
@@ -156,7 +161,7 @@
                                    "## ##"
                                    "#####"])
                     (clear-rows 0 3)
-                    :matrix)
+                    :cells)
                 (pic->mat ["     "
                            "     "
                            "# #  "
@@ -184,7 +189,7 @@
                     (add-piece (-> (create-piece "J" 3))
 
                                0 0)
-                    :matrix)
+                    :cells)
                 (pic->mat ["   "
                            "###"
                            "###"])))}
@@ -206,7 +211,7 @@
                                    "# ###"])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :matrix)
+                    :cells)
                 (pic->mat ["     "
                            "    #"
                            "### #"]))
@@ -216,7 +221,7 @@
                                    "# ##"])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :matrix)
+                    :cells)
                 (pic->mat ["    "
                            "    "
                            "   #"]))
@@ -226,7 +231,7 @@
                                    "#### "])
                     (place-piece (create-piece "L" 2)
                                  3 0)
-                    :matrix)
+                    :cells)
                 (pic->mat ["     "
                            "     "
                            "# ###"]))
@@ -236,7 +241,7 @@
                                    "#   "])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :matrix)
+                    :cells)
                 (pic->mat ["    "
                            "### "
                            "##  "])))}
