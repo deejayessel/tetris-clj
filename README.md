@@ -16,22 +16,22 @@ An implementation of Tetris in Clojure.
 ## TODO
 
 ### Essentials
--[ ] Randomly generate pieces
-  -[ ] Add random ns
-  -[ ] Add `get-random-piece`: choose piece randomly, choose random rotation index
-  -[ ] Generate pieces randomly based on an input distribution
--[ ] Pieces drop over time (clock, ticks)
+- [ ] Randomly generate pieces
+  - [ ] Add random ns
+  - [ ] Add `get-random-piece`: choose piece randomly, choose random rotation index
+  - [ ] Generate pieces randomly based on an input distribution
+- [ ] Pieces drop over time (clock, ticks)
   - every tick, a piece drops, locks into place, or a new piece is added to its initial position
     to the board
--[ ] Drop a piece to the bottommost valid square `drop-piece`
--[ ] Detect when a game is over
--[ ] Detect line clears (for score calculation)
--[ ] Support single player
+- [ ] Drop a piece to the bottommost valid square `drop-piece`
+- [ ] Detect when a game is over
+- [ ] Detect line clears (for score calculation)
+- [ ] Support single player
   - add player API to core_api ns
 
 ### Extras
--[ ] Score calculation
--[ ] Support multiple players
+- [ ] Score calculation
+- [ ] Support multiple players
 
 ## License
 
