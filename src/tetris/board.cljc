@@ -1,6 +1,6 @@
 (ns tetris.board
   (:require [ysera.error :refer [error]]
-            [ysera.test :refer [is= is is-not]]
+            [ysera.test :refer [is= is is-not error?]]
             [tetris.utils :refer [pic->mat]]
             [tetris.piece :refer [create-piece] :as piece]))
 
@@ -16,13 +16,13 @@
            (is= (create-board [" # "
                                " ##"
                                "###"])
-                ; Result is flipped b/c first inner vector is y=0
+                ;; Result is flipped b/c pictures are interpreted right-side up (bottom row is y=0)
+                ;; whereas matrices in general are interpreted bottom-side up (top row is y=0)
                 {:cells  [[true true true]
                           [false true true]
                           [false true false]]
                  :width  3
                  :height 3}))}
-  ; Initialize using a picture
   ([pic]
    (let [mat (pic->mat pic)]
      {:cells  mat
@@ -30,8 +30,8 @@
                   (first)
                   (count))
       :height (count mat)}))
-  ; Initialize empty width x height matrix
   ([width height]
+   ; Initialize an empty board given width, height
    {:cells  (-> (repeat height
                         (-> (repeat width false)
                             (vec)))
@@ -180,27 +180,33 @@
         (recur b (inc y))))))
 
 (defn add-piece
-  "Add a piece on to board with lower-left corner at (x,y). Throw error if the piece overlaps with a full cell."
-  ; TODO throw error
+  "Add a piece on to board with lower-left corner at (x,y).
+  Throw error if the piece overlaps with a full cell."
   {:test (fn []
            (is= (-> (create-board ["   "
                                    "   "
                                    "## "])
-                    (add-piece (-> (create-piece "J" 3))
-
+                    (add-piece (create-piece "J" 3)
                                0 0)
                     :cells)
                 (pic->mat ["   "
                            "###"
-                           "###"])))}
+                           "###"]))
+           (error? (-> (create-board ["###"
+                                      "###"])
+                       (add-piece (create-piece "Z" 0)
+                                  0 0)
+                       :cells))
+           )}
   [board piece x y]
   (reduce (fn [board [dx dy]]
-            (set-cell board
-                      (+ x dx)
-                      (+ y dy)
-                      true))
+            (let [x (+ x dx)
+                  y (+ y dy)]
+              (if (cell-full? board x y)
+                (error (str "Attempted to add a piece to an occupied cell: " x y))
+                (set-cell board x y true))))
           board
-          (piece/coords piece)))
+          (piece/get-coords piece)))
 
 (defn place-piece
   "Place a piece on the board, processing line clears"
@@ -248,4 +254,4 @@
   [board piece x y]
   (-> board
       (add-piece piece x y)
-      (clear-rows y (+ y (piece/height piece)))))
+      (clear-rows y (+ y (piece/get-height piece)))))

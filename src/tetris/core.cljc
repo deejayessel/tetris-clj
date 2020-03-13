@@ -7,7 +7,7 @@
                                   place-piece] :as board]))
 
 (defn initial-position
-  "Returns the initial (x,y) coordinates for a piece in a board.
+  "Returns the initial (x,y) coordinates for a piece in a board, given its width.
    Pieces should be centered and in the uppermost row at start."
   {:test (fn []
            (is= (initial-position 2 10 20)
@@ -50,6 +50,6 @@
   {:seed  0
    :board board
    :piece {:body     piece
-           :position (initial-position (piece/width piece)
+           :position (initial-position (piece/get-width piece)
                                        (board/width board)
                                        (board/height board))}})

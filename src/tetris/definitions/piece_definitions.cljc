@@ -4,10 +4,10 @@
             [tetris.utils :refer [pic->coords]]
             [tetris.definitions :as definitions]))
 
-;; Build piece definitions from 'pictures' (i.e. lists of strings where hashes=filled
+;; Build piece definitions from 'pictures' (i.e. lists of strings where hashes=filled)
 
 (defn compute-skirt
-  "Compute the skirt of a piece from its coords"
+  "Compute the skirt of a piece from its pts"
   {:test (fn []
            (is= (compute-skirt (pic->coords ["##"
                                              " ##"]))
@@ -24,8 +24,9 @@
   (->> coords
        (sort-by first)
        (partition-by first)
-       (map (fn [col]
-              (->> col
+       ;; Get the points with minimal y
+       (map (fn [coords]
+              (->> coords
                    (map second)
                    (apply min))))))
 
@@ -38,6 +39,7 @@
            (is= (compute-height (pic->coords ["####"]))
                 1))}
   [coords]
+  ;: Count the number of different y-values
   (->> coords
        (sort-by second)
        (partition-by second)
@@ -52,6 +54,7 @@
            (is= (compute-width (pic->coords ["####"]))
                 4))}
   [coords]
+  ;; Count the number of different x-values
   (->> coords
        (sort-by first)
        (partition-by first)
@@ -122,16 +125,16 @@
           [coords]
           (range 4)))
 
-(defn create-body
+(defn create-rotation
   "Create a piece body from coords; the result of rotating a body is treated as a new body (unless rotation has no effect)"
   {:test (fn []
-           (is= (create-body (pic->coords ["##"
-                                           " ##"]))
+           (is= (create-rotation (pic->coords ["##"
+                                               " ##"]))
                 {:coords #{[0 1] [1 0] [1 1] [2 0]}
                  :height 2
                  :width  3
                  :skirt  [1 0 0]})
-           (is= (create-body (pic->coords ["####"]))
+           (is= (create-rotation (pic->coords ["####"]))
                 {:coords #{[0 0] [1 0] [2 0] [3 0]}
                  :height 1
                  :width  4
@@ -169,10 +172,11 @@
                       (pic->coords)
                       (compute-rotations))]
     {:rotations      (->> rotations
-                          (map create-body)
+                          (map create-rotation)
                           (vec))
      :rotation-count (count rotations)}))
 
+;; Define the 7 tetrominos
 (def name->pic
   {"T" ["###"
         " #"]

@@ -25,17 +25,17 @@
                       (mod rotation-index
                            rotation-count))}))
 
-(defn- get-body
+(defn- get-rotation
   "Returns the current body of a tetris piece"
   {:test (fn []
            (is= (-> (create-piece "I")
-                    (get-body))
+                    (get-rotation))
                 {:coords #{[0 0] [0 1] [0 2] [0 3]}
                  :height 4
                  :width  1
                  :skirt  [0]})
            (is= (-> (create-piece "T")
-                    (get-body))
+                    (get-rotation))
                 {:coords #{[0 1] [1 0] [1 1] [2 1]}
                  :height 2
                  :width  3
@@ -59,24 +59,24 @@
                 [0 0]))}
   [piece key]
   (-> piece
-      (get-body)
+      (get-rotation)
       key))
 
-(defn height [piece] (get-in-piece piece :height))
-(defn width [piece] (get-in-piece piece :width))
-(defn coords [piece] (get-in-piece piece :coords))
-(defn skirt [piece] (get-in-piece piece :skirt))
+(defn get-height [piece] (get-in-piece piece :height))
+(defn get-width [piece] (get-in-piece piece :width))
+(defn get-coords [piece] (get-in-piece piece :coords))
+(defn get-skirt [piece] (get-in-piece piece :skirt))
 
 (defn rotate-piece
   "Rotates a tetris piece clockwise.  If n is provided, rotates piece clockwise n times."
   {:test (fn []
            (is= (-> (create-piece "I")
                     (rotate-piece)
-                    (coords))
+                    (get-coords))
                 (pic->coords ["####"]))
            (is= (-> (create-piece "I")
                     (rotate-piece 2)
-                    (coords))
+                    (get-coords))
                 (pic->coords ["#"
                               "#"
                               "#"
