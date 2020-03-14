@@ -17,9 +17,10 @@ An implementation of Tetris in Clojure.
 
 ### Essentials
 - [ ] Randomly generate pieces
-  - [ ] Add random ns
-  - [ ] Add `get-random-piece`: choose piece randomly, choose random rotation index
-  - [ ] Generate pieces randomly based on an input distribution
+  - [x] Add random ns
+  - [x] Add `get-random-piece`: choose piece randomly, choose random rotation index
+  - [ ] Create random bags of pieces, update state during `get-next-piece` or similar calls
+        to handle generation of new pieces
 - [ ] Pieces drop over time (clock, ticks)
   - every tick, a piece drops, locks into place, or a new piece is added to its initial position
     to the board

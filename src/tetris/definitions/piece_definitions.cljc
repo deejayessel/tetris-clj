@@ -177,6 +177,7 @@
      :rotation-count (count rotations)}))
 
 ;; Define the 7 tetrominos
+; TODO : associate initial rotations (e.g. T should start as ㅗ) by storing initial rotation indices
 (def name->pic
   {"T" ["###"
         " #"]

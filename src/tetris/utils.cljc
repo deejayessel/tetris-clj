@@ -64,3 +64,22 @@
          ; Vectorize
          (map vec)
          (vec))))
+
+(defn create-empty-mat
+  "Create an empty mat of the given dimensions."
+  {:test (fn []
+           (is= (create-empty-mat 3 3)
+                [[false false false]
+                 [false false false]
+                 [false false false]])
+           (is= (create-empty-mat 1 5)
+                [[false]
+                 [false]
+                 [false]
+                 [false]
+                 [false]]))}
+  [width height]
+  (-> (repeat height
+              (-> (repeat width false)
+                  (vec)))
+      (vec)))

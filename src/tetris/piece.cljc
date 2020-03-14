@@ -63,9 +63,25 @@
       key))
 
 (defn get-height [piece] (get-in-piece piece :height))
+
 (defn get-width [piece] (get-in-piece piece :width))
+
 (defn get-coords [piece] (get-in-piece piece :coords))
+
 (defn get-skirt [piece] (get-in-piece piece :skirt))
+
+(defn get-rotation-count
+  {:test (fn []
+           (is= (-> (create-piece "Z")
+                    (get-rotation-count))
+                2)
+           (is= (-> (create-piece "T")
+                    (get-rotation-count))
+                4)
+           )}
+  [piece]
+  (-> (get-definition piece)
+      :rotation-count))
 
 (defn rotate-piece
   "Rotates a tetris piece clockwise.  If n is provided, rotates piece clockwise n times."
@@ -80,14 +96,20 @@
                 (pic->coords ["#"
                               "#"
                               "#"
-                              "#"])))}
+                              "#"]))
+           (is= (-> (create-piece "T")
+                    (rotate-piece 3)
+                    (get-coords))
+                (pic->coords ["#"
+                              "##"
+                              "#"]))
+
+           )}
   ([piece]
    (rotate-piece piece 1))
   ([piece n]
-   (let [rotation-count (-> (get-definition piece)
-                            :rotation-count)]
-     (update piece
-             :rotation-index
-             (fn [i]
-               (mod (+ i n)
-                    rotation-count))))))
+   (update piece
+           :rotation-index
+           (fn [i]
+             (mod (+ i n)
+                  (get-rotation-count piece))))))
