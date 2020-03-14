@@ -3,8 +3,10 @@
             [ysera.test :refer [is= is is-not]]
             [tetris.utils :refer [create-empty-mat
                                   pic->mat]]
+            [tetris.random :refer [get-random-bag]]
             [tetris.piece :refer [create-piece] :as piece]
             [tetris.board :refer [create-board
+                                  collision?
                                   place-piece] :as board]))
 
 (defn initial-position
@@ -26,34 +28,72 @@
 (defn create-game
   "Create a tetris game"
   {:test (fn []
-           (is= (create-game {:board        (create-board)
-                              :active-piece (create-piece "L")})
+           (is= (create-game (create-board)
+                             (create-piece "L")
+                             :seed 1)
+                {:seed           1
+                 :board          {:height 20
+                                  :width  10
+                                  :cells  (create-empty-mat 10 20)}
+                 :active-piece   {:id             "L"
+                                  :rotation-index 0
+                                  :position       [4 19]}
+                 :next-piece-ids []})
+           (is= (create-game (create-board)
+                             (create-piece "T"))
                 {:seed           0
                  :board          {:height 20
                                   :width  10
                                   :cells  (create-empty-mat 10 20)}
-                 :active-piece   {:body     {:id             "L"
-                                             :rotation-index 0}
-                                  :position [4 19]}
-                 :next-piece-ids []})
-           (is= (create-game {:board        (create-board)
-                              :active-piece (create-piece "T")})
-                {:seed           0
-                 :board          {:height 20
-                                  :width  10
-                                  :cells  (create-empty-mat 10 20)}
-                 :active-piece   {:body     {:id             "T"
-                                             :rotation-index 0}
-                                  :position [3 19]}
-                 :next-piece-ids []})
-           )}
-  [{board :board
-    piece :active-piece}]
-  {:seed           0
-   :next-piece-ids []
-   :board          board
-   :active-piece   {:body     piece
-                    :position (initial-position (piece/get-width piece)
-                                                (board/width board)
-                                                (board/height board))}})
+                 :active-piece   {:id             "T"
+                                  :rotation-index 0
+                                  :position       [3 19]}
+                 :next-piece-ids []}))}
+  [board piece & kvs]
+  (let [state {:seed           0
+               :next-piece-ids []
+               :board          board
+               :active-piece   (merge piece
+                                      {:position (initial-position (piece/get-width piece)
+                                                                   (board/width board)
+                                                                   (board/height board))})}]
+    (if (empty? kvs)
+      state
+      (apply assoc state kvs))))
+
+(defn get-active-piece
+  {:test (fn []
+           (is= (-> (create-game (create-board)
+                                 (create-piece "L"))
+                    (get-active-piece))
+                {:id             "L"
+                 :rotation-index 0
+                 :position       [4 19]}))}
+  [state]
+  (:active-piece state))
+
+(defn lower-piece
+  "Lower the active piece or, if lowering would cause a collision, place the piece in-place."
+  {:test (fn []
+           (is= (-> (create-game (create-board)
+                                 (create-piece "L"))
+                    (lower-piece)
+                    (get-active-piece)
+                    :position)
+                [4 18])
+           (is= (-> (create-game (create-board)
+                                 (create-piece "T"))
+                    (lower-piece)
+                    (get-active-piece)
+                    :position)
+                [3 18]))}
+  [state]
+  (let [board (:board state)
+        piece (get-active-piece state)
+        [x y] (:position piece)]
+    (if (collision? board piece x (dec y))
+      (place-piece board piece x y)
+      (update-in state
+                 [:active-piece :position]
+                 (fn [[x y]] [x (dec y)])))))
 

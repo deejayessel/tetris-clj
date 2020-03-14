@@ -215,6 +215,53 @@
             (recur y))
         (recur b (inc y))))))
 
+(defn valid-coord?
+  "Checks whether (x,y) is in range of a board.
+  Height exceeding the height of the board is allowed."
+  {:test (fn []
+           (is (valid-coord? (create-board 3 3)
+                             0 0))
+           (is (valid-coord? (create-board 3 3)
+                             2 2))
+           (is (valid-coord? (create-board 3 3)
+                             0 4))
+           (is-not (valid-coord? (create-board 3 3)
+                                 3 3)))}
+  [board x y]
+  (and (<= 0 x (dec (width board)))
+       (<= 0 y))
+  )
+
+(defn collision?
+  "Determines whether a piece can be added to the board at (x,y) without collisions."
+  {:test (fn []
+           (is-not (collision? (create-board 3 3)
+                               (create-piece "L")
+                               0 0))
+           (is-not (collision? (create-board 2 2)
+                               (create-piece "I")
+                               0 0))
+           (is (collision? (create-board ["###"
+                                          "###"
+                                          "###"])
+                           (create-piece "L")
+                           0 0))
+
+           (error? (collision? (create-board 1 1)
+                               (create-piece "I")
+                               -1 -1)))}
+  [board piece x y]
+  (let [piece-coords (map (fn [[px py]] [(+ x px)
+                                         (+ y py)])
+                          (piece/get-coords piece))]
+    (if-not (every? (fn [[px py]]
+                      (valid-coord? board px py))
+                    piece-coords)
+      (error "Piece is out of range of board: (" x "," y ")")
+      (some (fn [[px py]]
+              (cell-full? board px py))
+            piece-coords))))
+
 (defn add-piece
   "Add a piece on to board with lower-left corner at (x,y).
   Throw error if the piece overlaps with a full cell."
@@ -235,14 +282,14 @@
                        :cells))
            )}
   [board piece x y]
-  (reduce (fn [board [dx dy]]
-            (let [x (+ x dx)
-                  y (+ y dy)]
-              (if (cell-full? board x y)
-                (error (str "Attempted to add a piece to an occupied cell: " x y))
-                (set-cell board x y true))))
-          board
-          (piece/get-coords piece)))
+  (if (collision? board piece x y)
+    (error (str "Adding piece caused a collision / out of bounds"))
+    (reduce (fn [board [dx dy]]
+              (let [x (+ x dx)
+                    y (+ y dy)]
+                (set-cell board x y true)))
+            board
+            (piece/get-coords piece))))
 
 (defn place-piece
   "Place a piece on the board, processing line clears"
