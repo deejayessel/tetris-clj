@@ -1,7 +1,8 @@
 (ns tetris.core
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is= is is-not]]
-            [tetris.utils :refer [pic->mat]]
+            [tetris.utils :refer [create-empty-mat
+                                  pic->mat]]
             [tetris.piece :refer [create-piece] :as piece]
             [tetris.board :refer [create-board
                                   place-piece] :as board]))
@@ -25,21 +26,24 @@
 (defn create-game
   "Create a tetris game"
   {:test (fn []
-           (is= (create-game {:board (create-board 10 20)
+           (is= (create-game {:board (create-board)
                               :piece (create-piece "L")})
-                {:board {:height 20
-                         :width  10
-                         :cells  (repeat 20
-                                         (repeat 10 false))}
+                {:board {:height         20
+                         :width          10
+                         :cells          (create-empty-mat 10 20)
+                         :seed           0
+                         :next-piece-ids []}
                  :piece {:body     {:id             "L"
                                     :rotation-index 0}
                          :position [4 19]}
                  :seed  0})
-           (is= (create-game {:board (create-board 10 20)
+           (is= (create-game {:board (create-board)
                               :piece (create-piece "T")})
-                {:board {:height 20
-                         :width  10
-                         :cells  (repeat 20 (repeat 10 false))}
+                {:board {:height         20
+                         :width          10
+                         :cells          (create-empty-mat 10 20)
+                         :seed           0
+                         :next-piece-ids []}
                  :piece {:body     {:id             "T"
                                     :rotation-index 0}
                          :position [3 19]}
