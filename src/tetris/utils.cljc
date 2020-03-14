@@ -1,6 +1,7 @@
 (ns tetris.utils
   (:require [ysera.error :refer [error]]
-            [ysera.test :refer [is= is is-not]]))
+            [ysera.test :refer [is= is is-not]]
+            [clojure.string :as str]))
 
 (defn pic->coords
   "Convert from a 'picture' to a set of coordinates"
@@ -83,3 +84,21 @@
               (-> (repeat width false)
                   (vec)))
       (vec)))
+
+(defn pic?
+  "Determines whether an input is a picture."
+  {:test (fn []
+           (is (pic? [" "]))
+           (is (pic? ["#"]))
+           (is (pic? ["# "]))
+           (is (pic? ["####"
+                      "    "]))
+           (is (pic? [" #  "
+                      " ## "
+                      "### "]))
+           (is-not (pic? (create-empty-mat 10 20)))
+           (is-not (pic? " "))
+           (is-not (pic? "##")))}
+  [x]
+  (and (vector? x)
+       (every? string? x)))
