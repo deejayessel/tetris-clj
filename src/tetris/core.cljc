@@ -26,34 +26,34 @@
 (defn create-game
   "Create a tetris game"
   {:test (fn []
-           (is= (create-game {:board (create-board)
-                              :piece (create-piece "L")})
-                {:board {:height         20
-                         :width          10
-                         :cells          (create-empty-mat 10 20)
-                         :seed           0
-                         :next-piece-ids []}
-                 :piece {:body     {:id             "L"
-                                    :rotation-index 0}
-                         :position [4 19]}
-                 :seed  0})
-           (is= (create-game {:board (create-board)
-                              :piece (create-piece "T")})
-                {:board {:height         20
-                         :width          10
-                         :cells          (create-empty-mat 10 20)
-                         :seed           0
-                         :next-piece-ids []}
-                 :piece {:body     {:id             "T"
-                                    :rotation-index 0}
-                         :position [3 19]}
-                 :seed  0})
+           (is= (create-game {:board        (create-board)
+                              :active-piece (create-piece "L")})
+                {:seed           0
+                 :board          {:height 20
+                                  :width  10
+                                  :cells  (create-empty-mat 10 20)}
+                 :active-piece   {:body     {:id             "L"
+                                             :rotation-index 0}
+                                  :position [4 19]}
+                 :next-piece-ids []})
+           (is= (create-game {:board        (create-board)
+                              :active-piece (create-piece "T")})
+                {:seed           0
+                 :board          {:height 20
+                                  :width  10
+                                  :cells  (create-empty-mat 10 20)}
+                 :active-piece   {:body     {:id             "T"
+                                             :rotation-index 0}
+                                  :position [3 19]}
+                 :next-piece-ids []})
            )}
   [{board :board
-    piece :piece}]
-  {:seed  0
-   :board board
-   :piece {:body     piece
-           :position (initial-position (piece/get-width piece)
-                                       (board/width board)
-                                       (board/height board))}})
+    piece :active-piece}]
+  {:seed           0
+   :next-piece-ids []
+   :board          board
+   :active-piece   {:body     piece
+                    :position (initial-position (piece/get-width piece)
+                                                (board/width board)
+                                                (board/height board))}})
+
