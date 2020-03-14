@@ -75,11 +75,46 @@
                   (count))
       :height (count mat)})))
 
-(defn width [board] (:width board))
-(defn height [board] (:height board))
+(defn get-width [board] (:width board))
+(defn get-height [board] (:height board))
+
+(defn valid-coord?
+  "Checks whether (x,y) is in range of a board.
+  Height exceeding the height of the board is allowed."
+  {:test (fn []
+           (is (valid-coord? (create-board 3 3)
+                             0 0))
+           (is (valid-coord? (create-board 3 3)
+                             2 2))
+           (is (valid-coord? (create-board 3 3)
+                             0 4))
+           (is-not (valid-coord? (create-board 3 3)
+                                 3 3)))}
+  [board x y]
+  (and (<= 0 x (dec (get-width board)))
+       (<= 0 y)))
+
+(defn coord-in-range?
+  "Checks whether (x,y) is in the board."
+  {:test (fn []
+           (is (coord-in-range? (create-board 3 3)
+                                0 0))
+           (is (coord-in-range? (create-board 3 3)
+                                2 2))
+           (is (coord-in-range? (create-board 3 3)
+                                0 2))
+           (is-not (coord-in-range? (create-board 3 3)
+                                    0 3))
+           (is-not (coord-in-range? (create-board 3 3)
+                                    3 0))
+           (is-not (coord-in-range? (create-board 3 3)
+                                    3 3)))}
+  [board x y]
+  (and (<= 0 x (dec (get-width board)))
+       (<= 0 y (dec (get-height board)))))
 
 (defn- set-cell
-  "Set the value of a cell in the board"
+  "Set the value of a cell in the board.  Do nothing if (x,y) not in board."
   {:test (fn []
            (is= (-> (create-board 2 2)
                     (set-cell 0 1 true)
@@ -87,7 +122,9 @@
                 (pic->mat ["# "
                            "  "])))}
   [board x y val]
-  (assoc-in board [:cells y x] val))
+  (if-not (coord-in-range? board x y)
+    board
+    (assoc-in board [:cells y x] val)))
 
 (defn get-row
   "Get a row in the board"
@@ -150,13 +187,13 @@
   ([board start]
    (shift-down board start 1))
   ([board start step]
-   {:pre [(< start (height board))]}
+   {:pre [(< start (get-height board))]}
    (reduce (fn [board y]
              (assoc-in board [:cells y]
                        (or (get-row board (+ y step))
-                           (create-empty-row (width board)))))
+                           (create-empty-row (get-width board)))))
            board
-           (range start (height board)))))
+           (range start (get-height board)))))
 
 (defn clear-row
   "Clear a row in the board"
@@ -173,7 +210,7 @@
   (reduce (fn [board x]
             (set-cell board x y false))
           board
-          (range (width board))))
+          (range (get-width board))))
 
 (defn clear-rows
   "Clear all filled rows where y is in [start, end) in the board and shift all rows above cleared rows down."
@@ -214,23 +251,6 @@
             (shift-down y)
             (recur y))
         (recur b (inc y))))))
-
-(defn valid-coord?
-  "Checks whether (x,y) is in range of a board.
-  Height exceeding the height of the board is allowed."
-  {:test (fn []
-           (is (valid-coord? (create-board 3 3)
-                             0 0))
-           (is (valid-coord? (create-board 3 3)
-                             2 2))
-           (is (valid-coord? (create-board 3 3)
-                             0 4))
-           (is-not (valid-coord? (create-board 3 3)
-                                 3 3)))}
-  [board x y]
-  (and (<= 0 x (dec (width board)))
-       (<= 0 y))
-  )
 
 (defn collision?
   "Determines whether a piece can be added to the board at (x,y) without collisions."
@@ -283,7 +303,7 @@
            )}
   [board piece x y]
   (if (collision? board piece x y)
-    (error (str "Adding piece caused a collision / out of bounds"))
+    (error (str "Adding piece caused a collision"))
     (reduce (fn [board [dx dy]]
               (let [x (+ x dx)
                     y (+ y dy)]
@@ -294,6 +314,14 @@
 (defn place-piece
   "Place a piece on the board, processing line clears"
   {:test (fn []
+           ; Simple case
+           (is= (-> (create-board ["    "
+                                   "    "])
+                    (place-piece (create-piece "T")
+                                 0 0)
+                    :cells)
+                (pic->mat ["### "
+                           " #  "]))
            ; Process a tetris (line clear), shift cells down
            (is= (-> (create-board ["    #"
                                    "    #"

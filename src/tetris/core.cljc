@@ -18,7 +18,9 @@
            (is= (initial-position 3 10 20)
                 [3 19])
            (is= (initial-position 4 10 20)
-                [3 19]))}
+                [3 19])
+           (is= (initial-position 3 3 3)
+                [0 2]))}
   [piece-width board-width board-height]
   [(quot (- board-width
             piece-width)
@@ -55,8 +57,8 @@
                :board          board
                :active-piece   (merge piece
                                       {:position (initial-position (piece/get-width piece)
-                                                                   (board/width board)
-                                                                   (board/height board))})}]
+                                                                   (board/get-width board)
+                                                                   (board/get-height board))})}]
     (if (empty? kvs)
       state
       (apply assoc state kvs))))
@@ -72,9 +74,19 @@
   [state]
   (:active-piece state))
 
+(defn get-board
+  {:test (fn []
+           (is= (-> (create-game (create-board 3 3)
+                                 (create-piece "T"))
+                    (get-board))
+                (create-board 3 3)))}
+  [state]
+  (:board state))
+
 (defn lower-piece
   "Lower the active piece or, if lowering would cause a collision, place the piece in-place."
   {:test (fn []
+           ; Piece y gets decremented
            (is= (-> (create-game (create-board)
                                  (create-piece "L"))
                     (lower-piece)
@@ -86,13 +98,40 @@
                     (lower-piece)
                     (get-active-piece)
                     :position)
-                [3 18]))}
+                [3 18])
+           ; Lowering past end of screen places piece
+           (is= (-> (create-game (create-board ["    "
+                                                "    "])
+                                 (create-piece "T"))
+                    (lower-piece)
+                    (lower-piece)
+                    (get-board)
+                    :cells)
+                (pic->mat ["### "
+                           " #  "]))
+           ; Lowering into collision places piece
+           (is= (-> (create-game (create-board ["    "
+                                                "    "
+                                                "####"])
+                                 (create-piece "T"))
+                    (lower-piece)
+                    (lower-piece)
+                    (get-board)
+                    :cells)
+                (pic->mat ["### "
+                           " #  "
+                           "####"])))}
   [state]
-  (let [board (:board state)
+  (let [board (get-board state)
         piece (get-active-piece state)
         [x y] (:position piece)]
-    (if (collision? board piece x (dec y))
-      (place-piece board piece x y)
+    ; If piece is on bottom of screen or moving piece down would cause
+    ; a collision, place piece in board.
+    (if (or (zero? y)
+            (collision? board piece x (dec y)))
+      (update state
+              :board
+              (fn [board] (place-piece board piece x y)))
       (update-in state
                  [:active-piece :position]
                  (fn [[x y]] [x (dec y)])))))
