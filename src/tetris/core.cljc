@@ -6,13 +6,28 @@
             [tetris.random :refer [get-random-bag]]
             [tetris.piece :refer [create-piece] :as piece]
             [tetris.board :refer [create-board
+                                  place-piece
                                   collision?] :as board]
             [tetris.construct :refer [create-game
                                       get-active-piece
                                       get-board
-                                      has-next-piece?
-                                      place-piece-in-board]]))
+                                      update-active-piece]]))
 
+(defn has-next-piece?
+  {:test (fn []
+           (is (-> (create-game (create-board 3 3)
+                                (create-piece "T"))
+                   (has-next-piece?)))
+           (is-not (-> (create-game (create-board 3 3)
+                                    (create-piece "T")
+                                    :next-piece-ids [])
+                       (has-next-piece?))))}
+  [state]
+  (-> state
+      (:next-piece-ids)
+      (not-empty)))
+
+; TODO: change so that this is called whenever a piece is placed, i.e., whenever place-piece-in-board is called
 (defn start-next-piece
   "Starts play with a new active piece."
   {:test (fn []
@@ -55,6 +70,38 @@
       (-> state
           (assoc :active-piece active-piece)
           (update :next-piece-ids rest)))))
+
+(defn place-piece-in-board
+  "Adds a piece to the board, clearing lines and updating the active piece as necessary."
+  {:test (fn []
+           (is= (-> (create-game (create-board ["    "
+                                                "    "])
+                                 (create-piece "T"))
+                    (update-in [:active-piece :position] (fn [[x y]] [x (dec y)]))
+                    (place-piece-in-board)
+                    (get-board)
+                    :cells)
+                (pic->mat ["### "
+                           " #  "]))
+           (is= (-> (create-game (create-board ["   "
+                                                "   "])
+                                 (create-piece "T"))
+                    (update-in [:active-piece :position] (fn [[x y]] [x (dec y)]))
+                    (place-piece-in-board)
+                    (get-board)
+                    :cells)
+                (pic->mat ["   "
+                           " # "])))}
+  [state]
+  {:pre [(map? state)]}
+  (let [piece (get-active-piece state)
+        [x y] (:position piece)]
+    (-> state
+        (update :board (fn [board]
+                         (place-piece board
+                                      piece
+                                      x y)))
+        (start-next-piece))))
 
 (defn lower-piece
   "Lower the active piece or, if lowering would cause a collision, place the piece in-place."
@@ -113,10 +160,6 @@
     ; a collision, place piece in board.
     (if (or (zero? y)
             (collision? board piece x (dec y)))
-      (-> state
-          (place-piece-in-board)
-          (start-next-piece))
-      (update-in state
-                 [:active-piece :position]
-                 (fn [[x y]] [x (dec y)])))))
+      (place-piece-in-board state)
+      (update-active-piece state :position (fn [[x y]] [x (dec y)])))))
 
