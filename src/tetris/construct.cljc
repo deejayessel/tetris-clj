@@ -4,7 +4,8 @@
             [tetris.utils :refer [create-empty-mat
                                   pic->mat]]
             [tetris.random :refer [get-random-bag]]
-            [tetris.piece :refer [create-piece] :as piece]
+            [tetris.piece :refer [create-piece
+                                  piece?] :as piece]
             [tetris.board :refer [create-board
                                   collision?
                                   place-piece] :as board]))
@@ -21,11 +22,16 @@
                 [3 19])
            (is= (initial-position 3 3 3)
                 [0 2]))}
-  [piece-width board-width board-height]
-  [(quot (- board-width
-            piece-width)
-         2)
-   (dec board-height)])
+  ([piece board]
+   {:pre [(piece? piece)]}
+   (initial-position (piece/get-width piece)
+                     (board/get-width board)
+                     (board/get-height board)))
+  ([piece-width board-width board-height]
+   [(quot (- board-width
+             piece-width)
+          2)
+    (dec board-height)]))
 
 (defn create-game
   "Create a tetris game"
@@ -102,6 +108,18 @@
   (if (fn? fn-or-val)
     (update-in state [:active-piece key] fn-or-val)
     (assoc-in state [:active-piece key] fn-or-val)))
+
+(defn replace-active-piece
+  {:test (fn []
+           (is= (-> (create-game (create-board)
+                                 (create-piece "T"))
+                    (replace-active-piece (create-piece "L"))
+                    (get-active-piece)
+                    :id)
+                "L"))}
+  [state piece]
+  {:pre [(map? state) (map? piece)]}
+  (assoc state :active-piece piece))
 
 (defn get-board
   {:test (fn []

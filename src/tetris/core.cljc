@@ -11,7 +11,9 @@
             [tetris.construct :refer [create-game
                                       get-active-piece
                                       get-board
-                                      update-active-piece]]))
+                                      initial-position
+                                      update-active-piece
+                                      replace-active-piece]]))
 
 (defn has-next-piece?
   {:test (fn []
@@ -27,7 +29,54 @@
       (:next-piece-ids)
       (not-empty)))
 
-; TODO: change so that this is called whenever a piece is placed, i.e., whenever place-piece-in-board is called
+(defn refill-next-piece-ids
+  "Refilles the queue of next piece ids.  If the queue is not empty, leaves it as is."
+  {:test (fn []
+           (is= (-> (create-game (create-board 3 3)
+                                 (create-piece "T")
+                                 :next-piece-ids ["Z" "S" "I"])
+                    (refill-next-piece-ids)
+                    (:next-piece-ids))
+                ["Z" "S" "I"])
+           (is= (-> (create-game (create-board 3 3)
+                                 (create-piece "T")
+                                 :next-piece-ids [])
+                    (refill-next-piece-ids)
+                    (:next-piece-ids))
+                ["S" "L" "J" "I" "T" "O" "Z"]))}
+  [state]
+  {:pre [(map? state)]}
+  (if (has-next-piece? state)
+    state
+    (let [[seed next-piece-ids] (get-random-bag (:seed state))]
+      (-> state
+          (assoc :next-piece-ids next-piece-ids)
+          (assoc :seed seed)))))
+
+(defn get-next-active-piece
+  "Returns the next active piece."
+  {:test (fn []
+           (let [state (create-game (create-board)
+                                    (create-piece "Z")
+                                    :next-piece-ids ["S"])]
+             (is= (-> (get-next-active-piece state)
+                      :id)
+                  "S")
+             (is= (-> (get-next-active-piece state)
+                      :position)
+                  (initial-position (get-active-piece state)
+                                    (get-board state)))))}
+  [state]
+  {:pre [(map? state) (-> (:next-piece-ids state)
+                          (not-empty))]}
+  (let [piece (-> state
+                  :next-piece-ids
+                  (first)
+                  (create-piece))
+        board (get-board state)
+        pos-map {:position (initial-position piece board)}]
+    (merge piece pos-map)))
+
 (defn start-next-piece
   "Starts play with a new active piece."
   {:test (fn []
@@ -57,19 +106,10 @@
              (is= (:next-piece-ids state)
                   ["L" "J" "I" "T" "O" "Z"])))}
   [state]
-  (let [state (if (has-next-piece? state)
-                state
-                (let [[seed next-piece-ids] (get-random-bag (:seed state))]
-                  (-> state
-                      (assoc :next-piece-ids next-piece-ids)
-                      (assoc :seed seed))))]
-    (let [active-piece (-> state
-                           :next-piece-ids
-                           (first)
-                           (create-piece))]
-      (-> state
-          (assoc :active-piece active-piece)
-          (update :next-piece-ids rest)))))
+  (as-> state $
+        (refill-next-piece-ids $)
+        (replace-active-piece $ (get-next-active-piece $))
+        (update $ :next-piece-ids rest)))
 
 (defn place-piece-in-board
   "Adds a piece to the board, clearing lines and updating the active piece as necessary."

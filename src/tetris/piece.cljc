@@ -1,8 +1,21 @@
 (ns tetris.piece
   (:require [ysera.error :refer [error]]
-            [ysera.test :refer [is=]]
+            [ysera.test :refer [is is= is-not]]
             [tetris.utils :refer [pic->coords]]
             [tetris.definitions :refer [get-definition]]))
+
+(defn piece?
+  {:test (fn []
+           (is (piece? {:id             "T"
+                        :rotation-index 0}))
+           (is-not (piece? {:id "Z"}))
+           (is-not (piece? {:rotation-index 0}))
+           (is-not (piece? 0))
+           (is-not (piece? "T")))}
+  [piece]
+  (and (map? piece)
+       (contains? piece :id)
+       (contains? piece :rotation-index)))
 
 (defn create-piece
   "Create a tetris piece from an id and optional index."
@@ -19,6 +32,7 @@
   ([id]
    (create-piece id 0))
   ([id rotation-index]
+   {:post [(piece? %)]}
    {:id             id
     :rotation-index (let [rotation-count (-> (get-definition id)
                                              :rotation-count)]
@@ -40,35 +54,49 @@
                  :height 2
                  :width  3
                  :skirt  [1 0 1]}))}
-  [piece]
-  (-> piece
-      (get-definition)
-      (get-in [:rotations (:rotation-index piece)])))
+  ([id rotation-index]
+   (-> (get-definition id)
+       (get-in [:rotations rotation-index])))
+  ([piece]
+   {:pre [(piece? piece)]}
+   (get-rotation (:id piece)
+                 (:rotation-index piece))))
 
-(defn- get-in-piece
-  "Returns a value associated with the input key in a piece."
+(defn get-height
   {:test (fn []
-           (is= (-> (create-piece "J")
-                    (get-in-piece :coords))
-                #{[0 0] [1 0] [1 1] [1 2]})
-           (is= (-> (create-piece "L")
-                    (get-in-piece :height))
-                3)
-           (is= (-> (create-piece "L")
-                    (get-in-piece :skirt))
-                [0 0]))}
-  [piece key]
-  (-> piece
-      (get-rotation)
-      key))
+           (is= (-> (create-piece "I")
+                    (get-height))
+                4))}
+  [piece]
+  {:pre [(piece? piece)]}
+  (:height (get-rotation piece)))
 
-(defn get-height [piece] (get-in-piece piece :height))
+(defn get-width
+  {:test (fn []
+           (is= (-> (create-piece "I")
+                    (get-width))
+                1))}
+  [piece]
+  {:pre [(piece? piece)]}
+  (:width (get-rotation piece)))
 
-(defn get-width [piece] (get-in-piece piece :width))
+(defn get-coords
+  {:test (fn []
+           (is= (-> (create-piece "I")
+                    (get-coords))
+                #{[0 0] [0 1] [0 2] [0 3]}))}
+  [piece]
+  {:pre [(piece? piece)]}
+  (:coords (get-rotation piece)))
 
-(defn get-coords [piece] (get-in-piece piece :coords))
-
-(defn get-skirt [piece] (get-in-piece piece :skirt))
+(defn get-skirt
+  {:test (fn []
+           (is= (-> (create-piece "I")
+                    (get-skirt))
+                [0]))}
+  [piece]
+  {:pre [(piece? piece)]}
+  (:skirt (get-rotation piece)))
 
 (defn get-rotation-count
   {:test (fn []
@@ -79,8 +107,10 @@
                     (get-rotation-count))
                 4)
            )}
-  [piece]
-  (-> (get-definition piece)
+  [piece-or-id]
+  {:pre [(or (piece? piece-or-id)
+             (string? piece-or-id))]}
+  (-> (get-definition piece-or-id)
       :rotation-count))
 
 (defn rotate-piece
@@ -102,12 +132,12 @@
                     (get-coords))
                 (pic->coords ["#"
                               "##"
-                              "#"]))
-
-           )}
+                              "#"])))}
   ([piece]
+   {:pre [(piece? piece)]}
    (rotate-piece piece 1))
   ([piece n]
+   {:pre [(piece? piece)]}
    (update piece
            :rotation-index
            (fn [i]
