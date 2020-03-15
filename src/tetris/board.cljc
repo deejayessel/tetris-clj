@@ -303,7 +303,7 @@
            )}
   [board piece x y]
   (if (collision? board piece x y)
-    (error (str "Adding piece caused a collision"))
+    (error "Adding piece caused a collision")
     (reduce (fn [board [dx dy]]
               (let [x (+ x dx)
                     y (+ y dy)]

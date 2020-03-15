@@ -49,5 +49,5 @@
         definition (-> (deref definitions-atom)
                        (get id))]
     (when-not definition
-      (error (str "The id " id " does not exist. Are the definitions loaded?")))
+      (error "The id " id " does not exist. Are the definitions loaded?"))
     definition))
