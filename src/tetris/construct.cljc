@@ -42,7 +42,7 @@
                 {:seed           -6694901945638721951
                  :board          {:height 20
                                   :width  10
-                                  :cells  (create-empty-mat 10 20)}
+                                  :mat    (create-empty-mat 10 20)}
                  :active-piece   {:id             "L"
                                   :rotation-index 0
                                   :position       [4 19]}
@@ -52,7 +52,7 @@
                 {:seed           -8728512804673154413
                  :board          {:height 20
                                   :width  10
-                                  :cells  (create-empty-mat 10 20)}
+                                  :mat    (create-empty-mat 10 20)}
                  :active-piece   {:id             "T"
                                   :rotation-index 0
                                   :position       [3 19]}

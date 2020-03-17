@@ -6,6 +6,7 @@
             [tetris.random :refer [get-random-bag]]
             [tetris.piece :refer [create-piece] :as piece]
             [tetris.board :refer [create-board
+                                  col-height
                                   place-piece
                                   collision?] :as board]
             [tetris.construct :refer [create-game
@@ -120,7 +121,7 @@
                     (update-in [:active-piece :position] (fn [[x y]] [x (dec y)]))
                     (place-piece-in-board)
                     (get-board)
-                    :cells)
+                    :mat)
                 (pic->mat ["### "
                            " #  "]))
            (is= (-> (create-game (create-board ["   "
@@ -129,7 +130,7 @@
                     (update-in [:active-piece :position] (fn [[x y]] [x (dec y)]))
                     (place-piece-in-board)
                     (get-board)
-                    :cells)
+                    :mat)
                 (pic->mat ["   "
                            " # "])))}
   [state]
@@ -142,6 +143,32 @@
                                       piece
                                       x y)))
         (start-next-piece))))
+
+(defn move-active-piece
+  "Move the active piece from (x,y) to (x + dx, x + dy)."
+  {:test (fn []
+           (let [state (-> (create-game (create-board)
+                                        (create-piece "I")))
+                 [x1 y1] (-> state
+                             (get-active-piece)
+                             :position)
+                 [x2 y2] (-> state
+                             (move-active-piece [1 1])
+                             (get-active-piece)
+                             :position)
+                 [x3 y3] (-> state
+                             (move-active-piece (fn [[x y]] [(+ x 1)
+                                                             (+ y 1)]))
+                             (get-active-piece)
+                             :position)]
+             (is= x2 1)
+             (is= y2 1)
+             (is= (+ x1 1)
+                  x3)
+             (is= (+ y1 1)
+                  y3)))}
+  [state coords-or-fn]
+  (update-active-piece state :position coords-or-fn))
 
 (defn lower-piece
   "Lower the active piece or, if lowering would cause a collision, place the piece in-place."
@@ -166,7 +193,7 @@
                     (lower-piece)
                     (lower-piece)
                     (get-board)
-                    :cells)
+                    :mat)
                 (pic->mat ["### "
                            " #  "]))
            ; Lowering into collision places piece
@@ -177,7 +204,7 @@
                     (lower-piece)
                     (lower-piece)
                     (get-board)
-                    :cells)
+                    :mat)
                 (pic->mat ["### "
                            " #  "
                            "####"]))
@@ -201,5 +228,43 @@
     (if (or (zero? y)
             (collision? board piece x (dec y)))
       (place-piece-in-board state)
-      (update-active-piece state :position (fn [[x y]] [x (dec y)])))))
+      (move-active-piece state (fn [[x y]] [x (dec y)])))))
 
+(defn slam-piece
+  "Drops a piece as far down vertically as the board will allow, then place the piece."
+  {:test (fn []
+           (is= (-> (create-game (create-board ["     "
+                                                "     "
+                                                "     "
+                                                "     "
+                                                "#### "])
+                                 (create-piece "I"))
+                    (slam-piece)
+                    (get-board)
+                    :mat)
+                (pic->mat ["  #  "
+                           "  #  "
+                           "  #  "
+                           "  #  "
+                           "#### "]))
+           (is= (-> (create-game (create-board ["     "
+                                                "     "
+                                                "     "
+                                                "     "
+                                                "## ##"])
+                                 (create-piece "I"))
+                    (slam-piece)
+                    (get-board)
+                    :mat)
+                (pic->mat ["     "
+                           "     "
+                           "  #  "
+                           "  #  "
+                           "  #  "])))}
+  [state]
+  (let [active-piece (get-active-piece state)
+        [x y] (:position active-piece)
+        base-height (col-height (get-board state) x)]
+    (-> state
+        (move-active-piece (fn [[x _]] [x base-height]))
+        (place-piece-in-board))))

@@ -10,14 +10,14 @@
   "Create an empty tetris game board of the given dimensions."
   {:test (fn []
            (is= (create-empty-board 3 3)
-                {:cells  [[false false false]
+                {:mat    [[false false false]
                           [false false false]
                           [false false false]]
                  :width  3
                  :height 3})
 
            (is= (create-empty-board 1 5)
-                {:cells  [[false]
+                {:mat    [[false]
                           [false]
                           [false]
                           [false]
@@ -26,7 +26,7 @@
                  :height 5}))}
   [width height]
   {:pre [(number? width) (number? height)]}
-  {:cells  (create-empty-mat width height)
+  {:mat    (create-empty-mat width height)
    :width  width
    :height height})
 
@@ -42,34 +42,34 @@
            (is= (create-board [" #  "
                                " ## "
                                "### "])
-                {:cells  [[true true true false]
+                {:mat    [[true true true false]
                           [false true true false]
                           [false true false false]]
                  :width  4
                  :height 3})
            ; Test w/ dimensions
            (is= (create-board 3 3)
-                {:cells  [[false false false]
+                {:mat    [[false false false]
                           [false false false]
                           [false false false]]
                  :width  3
                  :height 3})
            ; Test empty
            (is= (create-board)
-                {:cells  (create-empty-mat 10 20)
+                {:mat    (create-empty-mat 10 20)
                  :width  10
                  :height 20}))}
   ([]
    (create-board 10 20))
   ([width height]
    {:pre [(number? width) (number? height)]}
-   {:cells  (create-empty-mat width height)
+   {:mat    (create-empty-mat width height)
     :width  width
     :height height})
   ([pic]
    {:pre [(pic? pic)]}
    (let [mat (pic->mat pic)]
-     {:cells  mat
+     {:mat    mat
       :width  (-> mat
                   (first)
                   (count))
@@ -118,13 +118,13 @@
   {:test (fn []
            (is= (-> (create-board 2 2)
                     (set-cell 0 1 true)
-                    :cells)
+                    :mat)
                 (pic->mat ["# "
                            "  "])))}
   [board x y val]
   (if-not (coord-in-range? board x y)
     board
-    (assoc-in board [:cells y x] val)))
+    (assoc-in board [:mat y x] val)))
 
 (defn get-row
   "Get a row in the board"
@@ -138,7 +138,7 @@
                     (get-row 1))
                 (repeat 3 true)))}
   [board y]
-  (get-in board [:cells y]))
+  (get-in board [:mat y]))
 
 (defn cell-full?
   "Check whether a cell (x,y) is occupied or not"
@@ -148,7 +148,7 @@
            (is (-> (create-board [" #"])
                    (cell-full? 1 0))))}
   [board x y]
-  (get-in board [:cells y x]))
+  (get-in board [:mat y x]))
 
 (defn create-empty-row [width] (-> (repeat width false)
                                    (vec)))
@@ -170,7 +170,7 @@
                                    "   "
                                    "###"])
                     (shift-down 1)
-                    :cells)
+                    :mat)
                 (pic->mat ["   "
                            "###"
                            "###"]))
@@ -179,7 +179,7 @@
                                    "   "
                                    "   "])
                     (shift-down 0 3)
-                    :cells)
+                    :mat)
                 (pic->mat ["   "
                            "   "
                            "   "
@@ -189,7 +189,7 @@
   ([board start step]
    {:pre [(< start (get-height board))]}
    (reduce (fn [board y]
-             (assoc-in board [:cells y]
+             (assoc-in board [:mat y]
                        (or (get-row board (+ y step))
                            (create-empty-row (get-width board)))))
            board
@@ -202,7 +202,7 @@
                                    "###"
                                    "# #"])
                     (clear-row 1)
-                    :cells)
+                    :mat)
                 (pic->mat ["  #"
                            "   "
                            "# #"])))}
@@ -221,7 +221,7 @@
                                    "#####"
                                    "#####"])
                     (clear-rows 0 3)
-                    :cells)
+                    :mat)
                 (pic->mat ["     "
                            "     "
                            "     "
@@ -234,7 +234,7 @@
                                    "## ##"
                                    "#####"])
                     (clear-rows 0 3)
-                    :cells)
+                    :mat)
                 (pic->mat ["     "
                            "     "
                            "# #  "
@@ -291,7 +291,7 @@
                                    "## "])
                     (add-piece (create-piece "J" 3)
                                0 0)
-                    :cells)
+                    :mat)
                 (pic->mat ["   "
                            "###"
                            "###"]))
@@ -299,7 +299,7 @@
                                       "###"])
                        (add-piece (create-piece "Z" 0)
                                   0 0)
-                       :cells))
+                       :mat))
            )}
   [board piece x y]
   (if (collision? board piece x y)
@@ -319,7 +319,7 @@
                                    "    "])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :cells)
+                    :mat)
                 (pic->mat ["### "
                            " #  "]))
            ; Process a tetris (line clear), shift cells down
@@ -328,7 +328,7 @@
                                    "# ###"])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :cells)
+                    :mat)
                 (pic->mat ["     "
                            "    #"
                            "### #"]))
@@ -338,7 +338,7 @@
                                    "# ##"])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :cells)
+                    :mat)
                 (pic->mat ["    "
                            "    "
                            "   #"]))
@@ -348,7 +348,7 @@
                                    "#### "])
                     (place-piece (create-piece "L" 2)
                                  3 0)
-                    :cells)
+                    :mat)
                 (pic->mat ["     "
                            "     "
                            "# ###"]))
@@ -358,7 +358,7 @@
                                    "#   "])
                     (place-piece (create-piece "T")
                                  0 0)
-                    :cells)
+                    :mat)
                 (pic->mat ["    "
                            "### "
                            "##  "])))}
@@ -366,3 +366,26 @@
   (-> board
       (add-piece piece x y)
       (clear-rows y (+ y (piece/get-height piece)))))
+
+(defn col-height
+  "Determines the highest (x,y) that is filled for the given x."
+  {:test (fn []
+           ; Test empty board
+           (is= (-> (create-board)
+                    (col-height 0))
+                0)
+           ; Test seeded board
+           (is= (as-> (create-board ["##     #"
+                                     " ##     "
+                                     " ###    "
+                                     "  #   # "]) $
+                      (map (fn [x] (col-height $ x))
+                           (range (get-width $))))
+                [4 4 3 2 0 0 1 4]))}
+  [board x]
+  {:pre [(number? x) (<= 0 x (dec (get-width board)))]}
+  (loop [y (get-height board)]
+    (if (or (cell-full? board x (dec y))
+            (zero? y))
+      y
+      (recur (dec y)))))
