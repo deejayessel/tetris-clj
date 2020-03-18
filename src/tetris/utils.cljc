@@ -3,8 +3,34 @@
             [ysera.test :refer [is= is is-not]]
             [clojure.string :as str]))
 
+(declare create-empty-mat)
+
+(defn pic?
+  "Determines whether an input is a picture."
+  {:test (fn []
+           (is (pic? [" "]))
+           (is (pic? ["#"]))
+           (is (pic? ["# "]))
+           (is (pic? ["####"
+                      "    "]))
+           (is (pic? [" #  "
+                      " ## "
+                      "### "]))
+           (is-not (pic? (create-empty-mat 10 20)))
+           (is-not (pic? " "))
+           (is-not (pic? "##")))}
+  [x]
+  (and (vector? x)
+       (every? (fn [s]
+                 (and (string? s)
+                      (every? (fn [c]
+                                (or (= c \space)
+                                    (= c \#)))
+                              s)))
+               x)))
+
 (defn pic->coords
-  "Convert from a 'picture' to a set of coordinates"
+  "Convert from a 'picture' to a set of filled coordinates."
   {:test (fn []
            (is= (pic->coords ["##"
                               " ##"])
@@ -14,8 +40,9 @@
            (is= (pic->coords ["###"
                               "#"])
                 #{[0 0] [0 1] [1 1] [2 1]}))}
-  [strings]
-  (->> strings
+  [pic]
+  {:pre [(pic? pic)]}
+  (->> pic
        (reverse)                                            ; Treat last string as lowermost row (y=0)
        (map-indexed
          (fn [y row]
@@ -28,8 +55,36 @@
        (remove nil?)
        (set)))
 
+(defn pad
+  "Pads a collection to length n with val."
+  {:test (fn []
+           (is= (pad 5 "###" \space)
+                "###  ")
+           (is= (pad 5 "###" " ")
+                "###  ")
+           (is= (pad 5 "" " ")
+                "     ")
+           )}
+  [n coll val]
+  (->> (repeat val)
+       (concat coll)
+       (take n)
+       (str/join)))
+
+(defn pic->row
+  "Makes a boolean array (row) out of a picture."
+  {:test (fn []
+           (is= (pic->row "# ###")
+                [true false true true true])
+           (is= (pic->row "   ")
+                [false false false]))}
+  [pic]
+  (->> pic
+       (map (fn [x] (= x \#)))
+       (vec)))
+
 (defn pic->mat
-  "Makes a matrix out of a picture"
+  "Makes a matrix out of a picture."
   {:test (fn []
            (is= (pic->mat ["# # "])
                 [[true false true false]])
@@ -51,17 +106,11 @@
                        (apply max))]
     (->> pic
          (reverse)                                          ; Treat last row as y=0
-         ; Pad shorter rows
+         ; Pad shorter rows, then convert to boolean
          (map (fn [row]
-                (let [diff (- max-width
-                              (count row))]
-                  (if (pos? diff)
-                    (concat row (repeat diff " "))
-                    row))))
-         ; Convert to true/false
-         (map (fn [row]
-                (map (fn [cell] (= cell \#))
-                     row)))
+                (as-> row $
+                      (pad max-width $ \space)
+                      (map (fn [cell] (= cell \#)) $))))
          ; Vectorize
          (map vec)
          (vec))))
@@ -84,21 +133,3 @@
               (-> (repeat width false)
                   (vec)))
       (vec)))
-
-(defn pic?
-  "Determines whether an input is a picture."
-  {:test (fn []
-           (is (pic? [" "]))
-           (is (pic? ["#"]))
-           (is (pic? ["# "]))
-           (is (pic? ["####"
-                      "    "]))
-           (is (pic? [" #  "
-                      " ## "
-                      "### "]))
-           (is-not (pic? (create-empty-mat 10 20)))
-           (is-not (pic? " "))
-           (is-not (pic? "##")))}
-  [x]
-  (and (vector? x)
-       (every? string? x)))

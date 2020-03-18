@@ -20,8 +20,9 @@ An implementation of Tetris in Clojure.
 - [ ] Pieces drop over time (clock, ticks)
   - every tick, a piece drops, locks into place, or a new piece is added to its initial position
     to the board
-- [ ] Drop a piece to the bottommost valid square `drop-piece`
+- [x] Drop a piece to the bottommost valid square `drop-piece`
 - [ ] Detect when a game is over
+- [ ] Detect Tetrises
 - [ ] Detect line clears (for score calculation)
 - [ ] Support single player
   - add player API to core_api ns

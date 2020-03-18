@@ -2,9 +2,25 @@
   (:require [ysera.error :refer [error]]
             [ysera.test :refer [is= is is-not error?]]
             [tetris.utils :refer [create-empty-mat
+                                  pad
                                   pic->mat
+                                  pic->row
                                   pic?]]
             [tetris.piece :refer [create-piece] :as piece]))
+
+(defn- row?
+  "Checks whether a value is a row."
+  {:test (fn []
+           (is (row? [true]))
+           (is (row? [false true false]))
+           (is-not (row? (repeat 10 false)))
+           (is-not (row? true)))}
+  [x]
+  (and (vector? x)
+       (every? boolean? x)))
+
+(defn create-empty-row [width] (-> (repeat width false)
+                                   (vec)))
 
 (defn create-empty-board
   "Create an empty tetris game board of the given dimensions."
@@ -76,10 +92,11 @@
       :height (count mat)})))
 
 (defn get-width [board] (:width board))
+
 (defn get-height [board] (:height board))
 
 (defn valid-coord?
-  "Checks whether (x,y) is in range of a board.
+  "Checks whether (x,y) is a valid coordinate in the board.
   Height exceeding the height of the board is allowed."
   {:test (fn []
            (is (valid-coord? (create-board 3 3)
@@ -127,18 +144,49 @@
     (assoc-in board [:mat y x] val)))
 
 (defn get-row
-  "Get a row in the board"
   {:test (fn []
            (is= (-> (create-board ["###"
                                    "   "])
                     (get-row 0))
-                (repeat 3 false))
+                [false false false])
            (is= (-> (create-board ["###"
                                    "   "])
                     (get-row 1))
-                (repeat 3 true)))}
+                [true true true]))}
   [board y]
   (get-in board [:mat y]))
+
+(defn update-row
+  {:test (fn []
+           ; Test value update
+           (is= (-> (create-board ["#  "
+                                   "   "])
+                    (update-row 0 (pic->row "## "))
+                    :mat)
+                (pic->mat ["#  "
+                           "## "]))
+           ; Test fn update
+           (is= (-> (create-board [" # # # # "
+                                   "# # # # #"])
+                    (update-row 0 (fn [row]
+                                    (map not row)))
+                    :mat)
+                (pic->mat [" # # # # "
+                           " # # # # "]))
+           ; Test length checking
+           (error? (-> (create-board [" # # # # "
+                                      "# # # # #"])
+                       (update-row 0 (pic->row "###")))))}
+  [board y row-or-fn]
+  {:pre [(or (fn? row-or-fn)
+             (row? row-or-fn))
+         (<= 0 y (dec (get-height board)))]}
+  (if (fn? row-or-fn)
+    (update-in board [:mat y] row-or-fn)
+    (if-not (= (count row-or-fn)
+               (get-width board))
+      (error "Row length not compatible with board")
+      (assoc-in board [:mat y] row-or-fn))))
 
 (defn cell-full?
   "Check whether a cell (x,y) is occupied or not"
@@ -150,9 +198,6 @@
   [board x y]
   (get-in board [:mat y x]))
 
-(defn create-empty-row [width] (-> (repeat width false)
-                                   (vec)))
-
 (defn row-full?
   "Check whether a row in the board is full"
   {:test (fn []
@@ -163,13 +208,13 @@
   [board y]
   (every? identity (get-row board y)))
 
-(defn shift-down
+(defn shift-rows-down
   "Shift the rows above y=start down by step.  If step is not provided, it defaults to 1."
   {:test (fn []
            (is= (-> (create-board ["###"
                                    "   "
                                    "###"])
-                    (shift-down 1)
+                    (shift-rows-down 1)
                     :mat)
                 (pic->mat ["   "
                            "###"
@@ -178,20 +223,19 @@
                                    "   "
                                    "   "
                                    "   "])
-                    (shift-down 0 3)
+                    (shift-rows-down 0 3)
                     :mat)
                 (pic->mat ["   "
                            "   "
                            "   "
                            "###"])))}
   ([board start]
-   (shift-down board start 1))
+   (shift-rows-down board start 1))
   ([board start step]
    {:pre [(< start (get-height board))]}
    (reduce (fn [board y]
-             (assoc-in board [:mat y]
-                       (or (get-row board (+ y step))
-                           (create-empty-row (get-width board)))))
+             (update-row board y (or (get-row board (+ y step))
+                                     (create-empty-row (get-width board)))))
            board
            (range start (get-height board)))))
 
@@ -212,7 +256,7 @@
           board
           (range (get-width board))))
 
-(defn clear-rows
+(defn clear-and-shift-rows
   "Clear all filled rows where y is in [start, end) in the board and shift all rows above cleared rows down."
   {:test (fn []
            (is= (-> (create-board ["# #  "
@@ -220,7 +264,7 @@
                                    "#####"
                                    "#####"
                                    "#####"])
-                    (clear-rows 0 3)
+                    (clear-and-shift-rows 0 3)
                     :mat)
                 (pic->mat ["     "
                            "     "
@@ -233,7 +277,7 @@
                                    "#####"
                                    "## ##"
                                    "#####"])
-                    (clear-rows 0 3)
+                    (clear-and-shift-rows 0 3)
                     :mat)
                 (pic->mat ["     "
                            "     "
@@ -248,7 +292,7 @@
       (if (row-full? b y)
         (-> b
             (clear-row y)
-            (shift-down y)
+            (shift-rows-down y)
             (recur y))
         (recur b (inc y))))))
 
@@ -365,7 +409,7 @@
   [board piece x y]
   (-> board
       (add-piece piece x y)
-      (clear-rows y (+ y (piece/get-height piece)))))
+      (clear-and-shift-rows y (+ y (piece/get-height piece)))))
 
 (defn col-height
   "Determines the highest (x,y) that is filled for the given x."
